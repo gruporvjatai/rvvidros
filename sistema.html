@@ -864,9 +864,9 @@
             throw errUpdate;
         }
         
-        // 2. Monta o objeto EXATAMENTE como no seu Dump do banco
+        // 2. Monta o objeto com um ID virgem para a tabela de logs
         const novoLog = {
-            id: Number(masterLog.id), 
+            id: getNextId(STATE.logs), // <--- CORREÇÃO AQUI: Gera um ID novo
             tipo: 'recebimento',
             produto_nome: null,
             quantidade: null,
@@ -890,7 +890,6 @@
         const { error: errInsert } = await sb.from('logs').insert([novoLog]);
         
         if (errInsert) {
-            // Se der erro, vai pular um popup com o motivo exato do bloqueio
             alert("ERRO DO BANCO: " + errInsert.message + "\nDetalhes: " + JSON.stringify(errInsert));
             throw errInsert; 
         }
