@@ -1,7 +1,7 @@
 {
   "name": "RV Vidros",
   "short_name": "RV Vidros",
-  "start_url": "rvvidros/sistema.html",
+  "start_url": "/rvvidros/sistema.html",
   "display": "standalone",
   "background_color": "#0f172a",
   "theme_color": "#0f172a",
