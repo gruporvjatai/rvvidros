@@ -690,16 +690,31 @@
                 // Integração Financeira: Garantir que existe o master log 'receita_obra'
                 if(isNew) {
             const logPayload = {
-                uid: gerarUid(), id: newId, tipo: 'receita_obra', 
-                data: new Date().toISOString(), observacao: obrName,
-                cliente_nome: cliName, valor_total: valorTotal,
-                status_financeiro: 'A RECEBER', valor_pago: 0, status: 'ATIVO',
-                produto_nome: 'Projeto/Obra', // <-- Garantia de salvamento
-                quantidade: 1                 // <-- Garantia de salvamento
+                id: Number(newId), 
+                tipo: 'receita_obra',
+                produto_nome: null,
+                quantidade: null, 
+                data: new Date().toISOString(), 
+                observacao: obrName,
+                valor_total: valorTotal,
+                cliente_nome: cliName, 
+                forma_pagamento: null,
+                status: 'ATIVO',
+                status_entrega: null,
+                qtd_entregue: null,
+                desconto: null,
+                status_financeiro: 'A RECEBER', 
+                vencimento: null,
+                valor_pago: 0, 
+                endereco_entrega: null,
+                uid: gerarUid()
             };
             const { error: errLog } = await sb.from('logs').insert([logPayload]);
-            if(errLog) throw errLog;        
-                } else {
+            if(errLog) {
+                alert("Erro ao enviar pro financeiro: " + errLog.message);
+                throw errLog;
+            }
+        } else {
                     // Atualiza o valor no log existente caso a obra já exista
                     // Encontra o log receita_obra dessa obra
                     const masterLog = STATE.logs.find(l => String(l.id) === String(newId) && l.type === 'receita_obra');
@@ -823,7 +838,7 @@
             document.getElementById('modal-receivable-edit').classList.remove('hidden');
         }
 
-        async function saveReceivableEdit() {
+       async function saveReceivableEdit() {
     const masterUid = document.getElementById('rec-uid').value;
     const method = document.getElementById('rec-method').value;
     const payVal = Number(document.getElementById('rec-pay-val').value) || 0;
@@ -838,40 +853,53 @@
     let finStatus = newPaid >= masterLog.totalValue ? 'PAGO' : 'PARCIAL';
 
     try {
-        // 1. Atualiza a Conta a Receber principal
+        // 1. Atualiza a Conta a Receber principal (Obra)
         const { error: errUpdate } = await sb.from('logs').update({ 
             valor_pago: Number(newPaid.toFixed(2)), 
             status_financeiro: finStatus 
         }).eq('uid', masterUid);
         
-        if (errUpdate) throw errUpdate;
+        if (errUpdate) {
+            alert("Erro ao atualizar saldo: " + errUpdate.message);
+            throw errUpdate;
+        }
         
-        // 2. Insere a linha do Histórico do Recebimento
-        const { error: errInsert } = await sb.from('logs').insert([{
-            uid: gerarUid(),
-            id: masterLog.id, 
+        // 2. Monta o objeto EXATAMENTE como no seu Dump do banco
+        const novoLog = {
+            id: Number(masterLog.id), 
             tipo: 'recebimento',
-            produto_nome: 'Baixa Obra', // <-- Preenche para não dar erro na tabela antiga
-            quantidade: 1,              // <-- Preenche para não dar erro na tabela antiga
+            produto_nome: null,
+            quantidade: null,
             data: new Date().toISOString(), 
-            observacao: 'Ref Obra #' + masterLog.id + ' - Baixa', 
+            observacao: 'Baixa Obra #' + masterLog.id, 
             valor_total: Number(payVal.toFixed(2)),
-            valor_pago: Number(payVal.toFixed(2)),
-            cliente_nome: masterLog.clientName, 
+            cliente_nome: masterLog.clientName || 'Cliente', 
             forma_pagamento: method, 
             status: 'ATIVO', 
-            status_financeiro: 'PAGO'
-        }]);
+            status_entrega: null,
+            qtd_entregue: null,
+            desconto: null,
+            status_financeiro: 'PAGO',
+            vencimento: null,
+            valor_pago: Number(payVal.toFixed(2)),
+            endereco_entrega: null,
+            uid: gerarUid()
+        };
+
+        // 3. Insere a linha do Histórico do Recebimento
+        const { error: errInsert } = await sb.from('logs').insert([novoLog]);
         
-        // Agora, se o Supabase bloquear, ele avisa na hora:
-        if (errInsert) throw errInsert; 
+        if (errInsert) {
+            // Se der erro, vai pular um popup com o motivo exato do bloqueio
+            alert("ERRO DO BANCO: " + errInsert.message + "\nDetalhes: " + JSON.stringify(errInsert));
+            throw errInsert; 
+        }
 
         document.getElementById('modal-receivable-edit').classList.add('hidden');
         showToast("Recebimento lançado com sucesso!");
         await loadData();
     } catch(err) {
         showLoading(false);
-        showToast("Erro ao baixar: " + err.message, true);
         console.error("Erro completo:", err);
     }
 }
