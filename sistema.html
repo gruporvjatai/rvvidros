@@ -689,14 +689,16 @@
 
                 // Integração Financeira: Garantir que existe o master log 'receita_obra'
                 if(isNew) {
-                    const logPayload = {
-                        uid: gerarUid(), id: newId, tipo: 'receita_obra', 
-                        data: new Date().toISOString(), observacao: obrName,
-                        cliente_nome: cliName, valor_total: valorTotal,
-                        status_financeiro: 'A RECEBER', valor_pago: 0, status: 'ATIVO'
-                    };
-                    const { error: errLog } = await sb.from('logs').insert([logPayload]);
-                    if(errLog) throw errLog;
+            const logPayload = {
+                uid: gerarUid(), id: newId, tipo: 'receita_obra', 
+                data: new Date().toISOString(), observacao: obrName,
+                cliente_nome: cliName, valor_total: valorTotal,
+                status_financeiro: 'A RECEBER', valor_pago: 0, status: 'ATIVO',
+                produto_nome: 'Projeto/Obra', // <-- Garantia de salvamento
+                quantidade: 1                 // <-- Garantia de salvamento
+            };
+            const { error: errLog } = await sb.from('logs').insert([logPayload]);
+            if(errLog) throw errLog;        
                 } else {
                     // Atualiza o valor no log existente caso a obra já exista
                     // Encontra o log receita_obra dessa obra
@@ -822,39 +824,57 @@
         }
 
         async function saveReceivableEdit() {
-            const masterUid = document.getElementById('rec-uid').value;
-            const method = document.getElementById('rec-method').value;
-            const payVal = Number(document.getElementById('rec-pay-val').value) || 0;
-            
-            if(payVal <= 0) return showToast("Insira um valor maior que zero", true);
-            showLoading(true);
+    const masterUid = document.getElementById('rec-uid').value;
+    const method = document.getElementById('rec-method').value;
+    const payVal = Number(document.getElementById('rec-pay-val').value) || 0;
+    
+    if(payVal <= 0) return showToast("Insira um valor maior que zero", true);
+    showLoading(true);
 
-            const masterLog = STATE.logs.find(l => String(l.uid) === String(masterUid));
-            if(!masterLog) { showLoading(false); return showToast("Conta não encontrada", true); }
+    const masterLog = STATE.logs.find(l => String(l.uid) === String(masterUid));
+    if(!masterLog) { showLoading(false); return showToast("Conta não encontrada", true); }
 
-            let newPaid = masterLog.paidValue + payVal;
-            let finStatus = newPaid >= masterLog.totalValue ? 'PAGO' : 'PARCIAL';
+    let newPaid = masterLog.paidValue + payVal;
+    let finStatus = newPaid >= masterLog.totalValue ? 'PAGO' : 'PARCIAL';
 
-            try {
-                // Atualiza Master Log
-                await sb.from('logs').update({ valor_pago: Number(newPaid.toFixed(2)), status_financeiro: finStatus }).eq('uid', masterUid);
-                
-                // Insere Log Histórico do Recebimento na hora
-                await sb.from('logs').insert([{
-                    uid: gerarUid(),
-                    id: masterLog.id, tipo: 'recebimento',
-                    data: new Date().toISOString(), observacao: 'Ref Obra #' + masterLog.id + ' - Baixa', valor_total: Number(payVal.toFixed(2)),
-                    cliente_nome: masterLog.clientName, forma_pagamento: method, status: 'ATIVO', status_financeiro: 'PAGO'
-                }]);
+    try {
+        // 1. Atualiza a Conta a Receber principal
+        const { error: errUpdate } = await sb.from('logs').update({ 
+            valor_pago: Number(newPaid.toFixed(2)), 
+            status_financeiro: finStatus 
+        }).eq('uid', masterUid);
+        
+        if (errUpdate) throw errUpdate;
+        
+        // 2. Insere a linha do Histórico do Recebimento
+        const { error: errInsert } = await sb.from('logs').insert([{
+            uid: gerarUid(),
+            id: masterLog.id, 
+            tipo: 'recebimento',
+            produto_nome: 'Baixa Obra', // <-- Preenche para não dar erro na tabela antiga
+            quantidade: 1,              // <-- Preenche para não dar erro na tabela antiga
+            data: new Date().toISOString(), 
+            observacao: 'Ref Obra #' + masterLog.id + ' - Baixa', 
+            valor_total: Number(payVal.toFixed(2)),
+            valor_pago: Number(payVal.toFixed(2)),
+            cliente_nome: masterLog.clientName, 
+            forma_pagamento: method, 
+            status: 'ATIVO', 
+            status_financeiro: 'PAGO'
+        }]);
+        
+        // Agora, se o Supabase bloquear, ele avisa na hora:
+        if (errInsert) throw errInsert; 
 
-                document.getElementById('modal-receivable-edit').classList.add('hidden');
-                showToast("Recebimento lançado com sucesso!");
-                await loadData();
-            } catch(err) {
-                showLoading(false);
-                showToast("Erro: " + err.message, true);
-            }
-        }
+        document.getElementById('modal-receivable-edit').classList.add('hidden');
+        showToast("Recebimento lançado com sucesso!");
+        await loadData();
+    } catch(err) {
+        showLoading(false);
+        showToast("Erro ao baixar: " + err.message, true);
+        console.error("Erro completo:", err);
+    }
+}
 
         async function estornarRecebimento(uidLogRecebimento) {
             if(!confirm("Atenção! Isso removerá este recebimento do caixa e voltará o valor para 'A Receber'. Confirma?")) return;
