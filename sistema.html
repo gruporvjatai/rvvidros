@@ -492,7 +492,6 @@
 
         async function loadData() {
             try {
-                // Trazemos tudo que precisamos do Supabase
                 const [resObras, resCli, resLog, resDesp] = await Promise.all([
                     sb.from('obras').select('*').order('id', { ascending: false }),
                     sb.from('clientes').select('*'),
@@ -509,12 +508,13 @@
                     id: c.id, name: c.nome, phone: c.telefone, doc: c.documento, address: c.endereco
                 }));
 
-                // Mapeamos logs para o financeiro (tipos: receita_obra, recebimento, despesa)
+                // Mapeamos logs e criamos o "refId" para conectar com Obras e Despesas perfeitamente
                 STATE.logs = (resLog.data || []).map(l => ({
                     uid: l.uid, id: l.id, type: l.tipo, date: l.data, 
                     totalValue: Number(l.valor_total), paidValue: Number(l.valor_pago),
                     clientName: l.cliente_nome, note: l.observacao, method: l.forma_pagamento, 
-                    finStatus: l.status_financeiro, status: l.status
+                    finStatus: l.status_financeiro, status: l.status,
+                    refId: l.produto_nome || l.id // <-- Magia que mantém os logs antigos funcionando
                 }));
 
                 STATE.expenses = (resDesp.data || []).map(e => ({
@@ -531,7 +531,6 @@
 
                 updateClientSelects();
                 
-                // Redirecionamento Inicial
                 if(!document.querySelector('.active-section')) {
                     navigate('dash');
                 } else {
@@ -683,41 +682,34 @@
             };
 
             try {
-                // Salva Obra
                 const { error: errObra } = await sb.from('obras').upsert(payloadObra);
                 if(errObra) throw errObra;
 
-                // Integração Financeira: Garantir que existe o master log 'receita_obra'
                 if(isNew) {
-            const logPayload = {
-                id: Number(newId), 
-                tipo: 'receita_obra',
-                produto_nome: null,
-                quantidade: null, 
-                data: new Date().toISOString(), 
-                observacao: obrName,
-                valor_total: valorTotal,
-                cliente_nome: cliName, 
-                forma_pagamento: null,
-                status: 'ATIVO',
-                status_entrega: null,
-                qtd_entregue: null,
-                desconto: null,
-                status_financeiro: 'A RECEBER', 
-                vencimento: null,
-                valor_pago: 0, 
-                endereco_entrega: null,
-                uid: gerarUid()
-            };
-            const { error: errLog } = await sb.from('logs').insert([logPayload]);
-            if(errLog) {
-                alert("Erro ao enviar pro financeiro: " + errLog.message);
-                throw errLog;
-            }
-        } else {
-                    // Atualiza o valor no log existente caso a obra já exista
-                    // Encontra o log receita_obra dessa obra
-                    const masterLog = STATE.logs.find(l => String(l.id) === String(newId) && l.type === 'receita_obra');
+                    const logPayload = {
+                        id: getNextId(STATE.logs), // NOVO ID SEGURO
+                        tipo: 'receita_obra',
+                        produto_nome: String(newId), // REFERENCIA DA OBRA
+                        quantidade: null, 
+                        data: new Date().toISOString(), 
+                        observacao: obrName,
+                        valor_total: valorTotal,
+                        cliente_nome: cliName, 
+                        forma_pagamento: null,
+                        status: 'ATIVO',
+                        status_entrega: null,
+                        qtd_entregue: null,
+                        desconto: null,
+                        status_financeiro: 'A RECEBER', 
+                        vencimento: null,
+                        valor_pago: 0, 
+                        endereco_entrega: null,
+                        uid: gerarUid()
+                    };
+                    const { error: errLog } = await sb.from('logs').insert([logPayload]);
+                    if(errLog) throw errLog;
+                } else {
+                    const masterLog = STATE.logs.find(l => String(l.refId) === String(newId) && l.type === 'receita_obra');
                     if(masterLog) {
                         let novoStatus = masterLog.finStatus;
                         if(masterLog.paidValue >= valorTotal) novoStatus = 'PAGO';
@@ -748,9 +740,7 @@
         // ==========================================
 
         function renderFinance() {
-            // Contas a Receber (Vem de receitas de obra onde paid < total e não estão canceladas)
             const contasReceber = STATE.logs.filter(l => l.type === 'receita_obra' && l.status !== 'CANCELADO');
-            
             let totalRecebido = 0;
             let totalSaidas = STATE.expenses.filter(e => e.status === 'PAGO').reduce((a, b) => a + Number(b.cost), 0);
 
@@ -758,13 +748,12 @@
             let recHtml = '';
 
             contasReceber.forEach(r => {
-                totalRecebido += r.paidValue; // Soma tudo que já foi pago dessas obras
-                
+                totalRecebido += r.paidValue;
                 const falta = r.totalValue - r.paidValue;
                 if(falta > 0) {
                     recHtml += `
                     <tr class="hover:bg-slate-50 border-b">
-                        <td class="p-3 py-4 text-xs font-bold text-slate-700">#${r.id} <br><span class="text-[10px] font-normal text-slate-400">${r.note}</span></td>
+                        <td class="p-3 py-4 text-xs font-bold text-slate-700">Obra #${r.refId} <br><span class="text-[10px] font-normal text-slate-400">${r.note}</span></td>
                         <td class="p-3 text-xs text-slate-600">${r.clientName}</td>
                         <td class="p-3 font-bold text-red-600">${formatMoney(falta)}</td>
                         <td class="p-3 text-right">
@@ -776,14 +765,11 @@
 
             recBody.innerHTML = recHtml || `<tr><td colspan="4" class="p-4 text-center text-slate-400">Nenhuma conta pendente.</td></tr>`;
 
-            // Totais Top Cards
             document.getElementById('fin-income').innerText = formatMoney(totalRecebido);
             document.getElementById('fin-expenses').innerText = formatMoney(totalSaidas);
             document.getElementById('fin-balance').innerText = formatMoney(totalRecebido - totalSaidas);
 
-            // Histórico Recebimentos (Filtros e Estorno)
             let incomeLogs = STATE.logs.filter(l => l.type === 'recebimento' && l.status !== 'CANCELADO');
-            
             const incStart = document.getElementById('inc-filter-start')?.value;
             const incEnd = document.getElementById('inc-filter-end')?.value;
             if(incStart) incomeLogs = incomeLogs.filter(i => new Date(i.date) >= new Date(incStart));
@@ -801,7 +787,6 @@
                 </tr>
             `).join('') : `<tr><td colspan="4" class="p-4 text-center text-slate-400">Vazio</td></tr>`;
 
-            // Histórico Despesas (Filtros e Estorno)
             let filteredExp = STATE.expenses.slice();
             const start = document.getElementById('exp-filter-start')?.value;
             const end = document.getElementById('exp-filter-end')?.value;
@@ -838,70 +823,61 @@
             document.getElementById('modal-receivable-edit').classList.remove('hidden');
         }
 
-       async function saveReceivableEdit() {
-    const masterUid = document.getElementById('rec-uid').value;
-    const method = document.getElementById('rec-method').value;
-    const payVal = Number(document.getElementById('rec-pay-val').value) || 0;
-    
-    if(payVal <= 0) return showToast("Insira um valor maior que zero", true);
-    showLoading(true);
+        async function saveReceivableEdit() {
+            const masterUid = document.getElementById('rec-uid').value;
+            const method = document.getElementById('rec-method').value;
+            const payVal = Number(document.getElementById('rec-pay-val').value) || 0;
+            
+            if(payVal <= 0) return showToast("Insira um valor maior que zero", true);
+            showLoading(true);
 
-    const masterLog = STATE.logs.find(l => String(l.uid) === String(masterUid));
-    if(!masterLog) { showLoading(false); return showToast("Conta não encontrada", true); }
+            const masterLog = STATE.logs.find(l => String(l.uid) === String(masterUid));
+            if(!masterLog) { showLoading(false); return showToast("Conta não encontrada", true); }
 
-    let newPaid = masterLog.paidValue + payVal;
-    let finStatus = newPaid >= masterLog.totalValue ? 'PAGO' : 'PARCIAL';
+            let newPaid = masterLog.paidValue + payVal;
+            let finStatus = newPaid >= masterLog.totalValue ? 'PAGO' : 'PARCIAL';
 
-    try {
-        // 1. Atualiza a Conta a Receber principal (Obra)
-        const { error: errUpdate } = await sb.from('logs').update({ 
-            valor_pago: Number(newPaid.toFixed(2)), 
-            status_financeiro: finStatus 
-        }).eq('uid', masterUid);
-        
-        if (errUpdate) {
-            alert("Erro ao atualizar saldo: " + errUpdate.message);
-            throw errUpdate;
+            try {
+                const { error: errUpdate } = await sb.from('logs').update({ 
+                    valor_pago: Number(newPaid.toFixed(2)), 
+                    status_financeiro: finStatus 
+                }).eq('uid', masterUid);
+                
+                if (errUpdate) throw errUpdate;
+                
+                const novoLog = {
+                    id: getNextId(STATE.logs), 
+                    tipo: 'recebimento',
+                    produto_nome: String(masterLog.refId), // GUARDANDO O LINK PARA O ESTORNO
+                    quantidade: null,
+                    data: new Date().toISOString(), 
+                    observacao: 'Baixa Obra #' + masterLog.refId, 
+                    valor_total: Number(payVal.toFixed(2)),
+                    cliente_nome: masterLog.clientName || 'Cliente', 
+                    forma_pagamento: method, 
+                    status: 'ATIVO', 
+                    status_entrega: null,
+                    qtd_entregue: null,
+                    desconto: null,
+                    status_financeiro: 'PAGO',
+                    vencimento: null,
+                    valor_pago: Number(payVal.toFixed(2)),
+                    endereco_entrega: null,
+                    uid: gerarUid()
+                };
+
+                const { error: errInsert } = await sb.from('logs').insert([novoLog]);
+                if (errInsert) throw errInsert; 
+
+                document.getElementById('modal-receivable-edit').classList.add('hidden');
+                showToast("Recebimento lançado com sucesso!");
+                await loadData();
+            } catch(err) {
+                showLoading(false);
+                alert("ERRO: " + err.message);
+                console.error("Erro:", err);
+            }
         }
-        
-        // 2. Monta o objeto com um ID virgem para a tabela de logs
-        const novoLog = {
-            id: getNextId(STATE.logs), // <--- CORREÇÃO AQUI: Gera um ID novo
-            tipo: 'recebimento',
-            produto_nome: null,
-            quantidade: null,
-            data: new Date().toISOString(), 
-            observacao: 'Baixa Obra #' + masterLog.id, 
-            valor_total: Number(payVal.toFixed(2)),
-            cliente_nome: masterLog.clientName || 'Cliente', 
-            forma_pagamento: method, 
-            status: 'ATIVO', 
-            status_entrega: null,
-            qtd_entregue: null,
-            desconto: null,
-            status_financeiro: 'PAGO',
-            vencimento: null,
-            valor_pago: Number(payVal.toFixed(2)),
-            endereco_entrega: null,
-            uid: gerarUid()
-        };
-
-        // 3. Insere a linha do Histórico do Recebimento
-        const { error: errInsert } = await sb.from('logs').insert([novoLog]);
-        
-        if (errInsert) {
-            alert("ERRO DO BANCO: " + errInsert.message + "\nDetalhes: " + JSON.stringify(errInsert));
-            throw errInsert; 
-        }
-
-        document.getElementById('modal-receivable-edit').classList.add('hidden');
-        showToast("Recebimento lançado com sucesso!");
-        await loadData();
-    } catch(err) {
-        showLoading(false);
-        console.error("Erro completo:", err);
-    }
-}
 
         async function estornarRecebimento(uidLogRecebimento) {
             if(!confirm("Atenção! Isso removerá este recebimento do caixa e voltará o valor para 'A Receber'. Confirma?")) return;
@@ -911,14 +887,12 @@
                 const recLog = STATE.logs.find(l => l.uid === uidLogRecebimento);
                 if(!recLog) throw new Error("Log não encontrado");
 
-                const parentId = recLog.id; 
+                const parentId = recLog.refId; // PUXA O LINK DA OBRA 
                 const valorEstorno = recLog.totalValue;
 
-                // 1. Cancela o log de recebimento
                 await sb.from('logs').update({ status: 'CANCELADO' }).eq('uid', uidLogRecebimento);
 
-                // 2. Abate do masterlog receita_obra
-                const masterLog = STATE.logs.find(l => String(l.id) === String(parentId) && l.type === 'receita_obra');
+                const masterLog = STATE.logs.find(l => String(l.refId) === String(parentId) && l.type === 'receita_obra');
                 if(masterLog) {
                     let novoPago = Math.max(0, masterLog.paidValue - valorEstorno);
                     let novoStatus = novoPago === 0 ? 'A RECEBER' : (novoPago < masterLog.totalValue ? 'PARCIAL' : 'PAGO');
@@ -983,8 +957,14 @@
             
             const descProduto = exp.fornecedor + (exp.obra ? ` (Obra: ${exp.obra})` : '');
             await sb.from('logs').insert([{
-                uid: gerarUid(), id: exp.id, tipo: 'despesa', data: new Date().toISOString(), 
-                observacao: exp.note || descProduto, valor_total: Number(exp.cost.toFixed(2)), status: 'ATIVO'
+                id: getNextId(STATE.logs), // ID SEGURO
+                uid: gerarUid(), 
+                tipo: 'despesa', 
+                produto_nome: String(exp.id), // GUARDA O LINK DA DESPESA
+                data: new Date().toISOString(), 
+                observacao: exp.note || descProduto, 
+                valor_total: Number(exp.cost.toFixed(2)), 
+                status: 'ATIVO'
             }]);
             
             showToast("Despesa baixada com sucesso!");
@@ -996,10 +976,13 @@
             showLoading(true);
 
             try {
-                // Volta status
                 await sb.from('despesas').update({ status: 'PENDENTE' }).eq('id', idDespesa);
-                // Cancela o log de despesa relacionado
-                await sb.from('logs').update({ status: 'CANCELADO' }).eq('id', idDespesa).eq('tipo', 'despesa');
+                
+                // Busca o log correspondente pelo Link (produto_nome = refId)
+                const logParaEstornar = STATE.logs.find(l => l.type === 'despesa' && String(l.refId) === String(idDespesa));
+                if (logParaEstornar) {
+                    await sb.from('logs').update({ status: 'CANCELADO' }).eq('uid', logParaEstornar.uid);
+                }
 
                 showToast("Despesa Estornada!");
                 loadData();
