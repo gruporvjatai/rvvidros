@@ -9,7 +9,6 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <script>
-        // Se detectar que a tela é de celular ou tablet, joga direto pro mobile.html
         if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 800) {
           window.location.replace("mobile.html");
         }
@@ -25,26 +24,15 @@
     <meta name="application-name" content="RV Portal Vidros">
     <meta name="apple-mobile-web-app-title" content="RV Portal Vidros">
     <meta name="theme-color" content="#0f172a"> 
-    <link rel="manifest" href="manifest.json">
 
     <style>
       body { background-color: #f1f5f9; font-family: 'Segoe UI', sans-serif; -webkit-font-smoothing: antialiased; }
-
-            /* Correção forçada para garantir que as bordas apareçam em todos os inputs e caixas */
-      .border { 
-          border-width: 1px !important; 
-          border-style: solid !important; 
-          border-color: #cbd5e1 !important; 
-      }
-      
+      .border { border-width: 1px !important; border-style: solid !important; border-color: #cbd5e1 !important; }
       .hidden-section { display: none !important; }
       .active-section { display: block !important; animation: fadeIn 0.3s ease-in-out; }
       @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-      
-      /* Alterado Esmeralda para Ciano no Loader */
       .loader { border: 3px solid #e2e8f0; border-top: 3px solid #0891b2; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
       @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
       .btn-action { transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: bold; border-radius: 8px; }
       .btn-action:active { transform: scale(0.98); }
 
@@ -55,65 +43,35 @@
         .no-print { display: none !important; }
         .print-only { display: block !important; }
         
-        .invoice-full { 
-            border: 1px solid #000; 
-            position: relative; 
-            z-index: 1;
-            min-height: 27.5cm; 
-            background-color: transparent;
-        }
-
-        .invoice-full::before {
-            content: "";
-            position: absolute;
-            top: 57%; 
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 450px; 
-            height: 450px;
-            background-image: url('https://i.postimg.cc/52cvrkkP/LOGRVPORTAL.png');
-            background-size: contain;
-            background-position: center;
-            background-repeat: no-repeat;
-            opacity: 0.1;
-            z-index: -1; 
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
-        }
+        .invoice-full { border: 1px solid #000; position: relative; z-index: 1; min-height: 27.5cm; background-color: transparent; }
+        .invoice-full::before { content: ""; position: absolute; top: 57%; left: 50%; transform: translate(-50%, -50%); width: 450px; height: 450px; background-image: url('https://i.postimg.cc/52cvrkkP/LOGRVPORTAL.png'); background-size: contain; background-position: center; background-repeat: no-repeat; opacity: 0.1; z-index: -1; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         .header-section { display: flex; border-bottom: 2px solid #000; padding-bottom: 15px; margin-bottom: 20px; }
         .logo-area { width: 120px; display: flex; align-items: center; justify-content: center; border-right: 1px solid #e2e8f0; padding-right: 15px; margin-right: 15px; }
         .company-details { flex: 1; }
-        /* Alterado para Ciano na impressão */
         .company-title { font-size: 20px; font-weight: 800; color: #0891b2; text-transform: uppercase; margin: 0; }
         .company-info { font-size: 11px; color: #475569; line-height: 1.4; margin-top: 5px; }
         .doc-meta { width: 180px; text-align: right; margin-right: 20px;}
         .doc-title { font-size: 16px; font-weight: 900; color: #0f172a; text-transform: uppercase; margin-bottom: 5px; }
         .meta-row { font-size: 11px; margin-bottom: 2px; }
-
         .info-grid { display: flex; gap: 20px; margin-bottom: 20px; }
         .info-col { flex: 1; border: 1px solid #000; border-radius: 6px; overflow: hidden; }
         .col-header { background-color: #f1f5f9; padding: 5px 10px; font-size: 10px; font-weight: bold; text-transform: uppercase; color: #64748b; border-bottom: 1px solid #000; }
         .col-content { padding: 10px; font-size: 11px; line-height: 1.5; }
-
         .full-table { width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 20px; }
         .full-table th { background-color: #0f172a; color: white; padding: 8px; text-align: left; font-weight: bold; text-transform: uppercase; font-size: 10px; }
         .full-table td { border-bottom: 1px solid #000; padding: 8px; vertical-align: middle; }
         .full-table tr:nth-child(even) { background-color: #f8fafc; }
-
         .footer-section { display: flex; gap: 30px; margin-top: 10px; }
         .notes-area { flex: 1; border: 1px dashed #cbd5e1; padding: 10px; border-radius: 6px; }
         .notes-title { font-size: 10px; font-weight: bold; margin-bottom: 5px; color: #64748b; }
         .notes-text { font-size: 10px; color: #334155; }
-        
         .totals-area { width: 250px; }
         .total-row { display: flex; justify-content: space-between; padding: 5px 0; font-size: 11px; border-bottom: 1px solid #e2e8f0; }
         .total-row.final { border-bottom: none; border-top: 2px solid #0f172a; font-size: 14px; font-weight: 900; margin-top: 5px; padding-top: 10px; background-color: #f1f5f9; padding: 10px; }
-        
         .signatures { margin-top: 50px; display: flex; justify-content: space-between; gap: 50px; }
         .sign-box { flex: 1; text-align: center; }
         .sign-line { border-top: 1px solid #000; margin-bottom: 5px; }
         .sign-label { font-size: 10px; font-weight: bold; text-transform: uppercase; }
-
         .invoice-box-orig { width: 100%; border: 1px solid #000; margin: 0 auto; }
         .header-orig { display: flex; border-bottom: 1px solid #000; }
         .logo-box-orig { width: 100px; padding: 5px; border-right: 1px solid #000; display: flex; align-items: center; justify-content: center; }
@@ -133,7 +91,7 @@
 
     <div class="w-64 bg-slate-900 text-white h-screen fixed left-0 top-0 flex flex-col shadow-2xl z-20 hidden md:flex no-print">
       <div class="p-6 flex flex-col items-center border-b border-slate-700 bg-slate-900">
-        <div class="w-20 h-20 rounded-full border-4 border-cyan-600 mb-3 shadow-lg bg-white overflow-hidden p-1 bg-white">
+        <div class="w-20 h-20 rounded-full border-4 border-cyan-600 mb-3 shadow-lg bg-white overflow-hidden p-1">
             <img src="https://i.postimg.cc/52cvrkkP/LOGRVPORTAL.png" class="w-full h-full object-contain" />
         </div>
         <h1 class="text-lg font-bold tracking-wider text-cyan-500">RV VIDROS</h1>
@@ -232,7 +190,7 @@
         </div>
       </div>
 
-<div id="view-expedition" class="hidden-section">
+      <div id="view-expedition" class="hidden-section">
          <h2 class="text-2xl font-bold text-slate-800 mb-6 flex items-center gap-2"><i data-lucide="truck"></i> Expedição / Entregas Pendentes</h2>
          
          <div class="bg-white rounded-xl border shadow-sm overflow-hidden mb-8">
@@ -409,8 +367,8 @@
                             <thead class="text-slate-500 border-b">
                                 <tr>
                                     <th class="pb-2">Data</th>
-                                    <th class="pb-2">Item</th>
-                                    <th class="pb-2 text-center">Qtd</th>
+                                    <th class="pb-2">Fornecedor</th>
+                                    <th class="pb-2">Obra</th>
                                     <th class="pb-2">Valor (R$)</th>
                                     <th class="pb-2">Obs</th>
                                     <th class="pb-2 text-right">Ação</th>
@@ -641,48 +599,28 @@
                 <button onclick="document.getElementById('modal-expense').classList.add('hidden')" class="text-slate-400 hover:text-red-500"><i data-lucide="x"></i></button>
             </div>
             <div class="p-6 space-y-4 overflow-y-auto">
-                 <input type="hidden" id="exp-id"> <div>
-                    <label class="block text-sm font-bold text-slate-700 mb-1">Descrição do Gasto (Item)</label>
-                    <select id="exp-item" class="w-full p-3 border rounded-xl focus:ring-2 focus:ring-cyan-600 outline-none bg-white">
-                        <option value="Cimento">Cimento</option>
-                        <option value="Areia">Areia</option>
-                        <option value="Brita">Brita</option>
-                        <option value="Frete">Frete</option>
-                        <option value="Salário">Salário</option>
-                        <option value="Combustível">Combustível</option>
-                        <option value="Imposto">Imposto</option>
-                        <option value="Maquinas">Máquinas</option>
-                        <option value="Despesas Diversas">Despesas Diversas</option>
-                    </select>
+                 <input type="hidden" id="exp-id"> 
+                 <div>
+                    <label class="block text-sm font-bold text-slate-700 mb-1">Fornecedor</label>
+                    <input type="text" id="exp-fornecedor" placeholder="Nome do fornecedor..." class="w-full p-3 border rounded-xl focus:ring-2 focus:ring-cyan-600 outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 mb-1">Obra / Destino (Opcional)</label>
+                    <input type="text" id="exp-obra" placeholder="Nome da obra ou local..." class="w-full p-3 border rounded-xl focus:ring-2 focus:ring-cyan-600 outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 mb-1">Custo Total / Valor (R$)</label>
+                    <input type="number" id="exp-cost" placeholder="0.00" class="w-full p-3 border rounded-xl font-bold text-red-600 focus:ring-2 focus:ring-cyan-600 outline-none">
                 </div>
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-sm font-bold text-slate-700 mb-1">Quantidade</label>
-                        <input type="number" id="exp-qty" placeholder="Ex: 50" class="w-full p-3 border rounded-xl focus:ring-2 focus:ring-cyan-600 outline-none">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-bold text-slate-700 mb-1">Unidade</label>
-                        <select id="exp-unit" class="w-full p-3 border rounded-xl focus:ring-2 focus:ring-cyan-600 outline-none bg-white">
-                            <option value="Un">Un (Unidade)</option>
-                            <option value="Sc">Sc (Saco)</option>
-                            <option value="Tn">Tn (Tonelada)</option>
-                            <option value="M³">M³ (Metros Cúbicos)</option>                            
-                            <option value="Kg">Kg (Quilo)</option>
-                            <option value="Lt">Lt (Litros)</option>
-                        </select>
+                        <label class="block text-sm font-bold text-slate-700 mb-1">Data</label>
+                        <input type="date" id="exp-date" class="w-full p-3 border rounded-xl focus:ring-2 focus:ring-cyan-600 outline-none">
                     </div>
                 </div>
                 <div>
-                    <label class="block text-sm font-bold text-slate-700 mb-1">Custo Total (R$)</label>
-                    <input type="number" id="exp-cost" placeholder="0.00" class="w-full p-3 border rounded-xl font-bold text-red-600 focus:ring-2 focus:ring-cyan-600 outline-none">
-                </div>
-                <div>
-                    <label class="block text-sm font-bold text-slate-700 mb-1">Data</label>
-                    <input type="date" id="exp-date" class="w-full p-3 border rounded-xl focus:ring-2 focus:ring-cyan-600 outline-none">
-                </div>
-                <div>
-                    <label class="block text-sm font-bold text-slate-700 mb-1">Observação</label>
-                    <input type="text" id="exp-note" placeholder="Descrição..." class="w-full p-3 border rounded-xl focus:ring-2 focus:ring-cyan-600 outline-none">
+                    <label class="block text-sm font-bold text-slate-700 mb-1">Observação (Opcional)</label>
+                    <input type="text" id="exp-note" placeholder="Descrição ou nota fiscal..." class="w-full p-3 border rounded-xl focus:ring-2 focus:ring-cyan-600 outline-none">
                 </div>
             </div>
             <div class="p-5 border-t bg-slate-50 flex gap-3">
@@ -694,30 +632,23 @@
   
 
 <script>
-        // ====== 1. VERIFICAÇÃO DE LOGIN GLOBAL ======
         let dadosUsuario = null;
         const userSessao = localStorage.getItem('rv_user');
 
         if (!userSessao) {
-            // Se não tem usuário logado, chuta de volta pro login
             window.location.replace('index.html');
         } else {
-            // Se estiver logado, salva os dados na variável global
             dadosUsuario = JSON.parse(userSessao);
         }
 
-        // ====== 2. CONEXÃO COM O SUPABASE ======
         const supabaseUrl = 'https://prfbidfbfwqihfhkcjgm.supabase.co'; 
         const supabaseKey = 'sb_publishable__57dsH1GJxj4_jMo4hddfA_OgepVXRu';
         const sb = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-        // ====== 3. VARIÁVEIS GERAIS DO SISTEMA ======
         let STATE = { products: [], clients: [], logs: [], quotes: [], expenses: [], users: [], custoMaterialB10: 0 };
         let CART = [];
         let CURRENT_QUOTE_ID = null; 
 
-        // ====== 4. FUNÇÃO GERADORA DE UID PARA ESTORNOS ======
-        // Garante que todo log inserido tenha um UID único, mesmo se o banco não gerar
         function gerarUid() {
             if (typeof crypto !== 'undefined' && crypto.randomUUID) {
                 return crypto.randomUUID();
@@ -725,7 +656,6 @@
             return Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
         }
 
-        // ====== 5. INICIALIZAÇÃO ======
         window.onload = function() { 
             if (dadosUsuario) {
                 showLoading(true); 
@@ -748,7 +678,6 @@
             if(viewId === 'fin') renderFinance();
             if(viewId === 'clients') renderClients();
             if(viewId === 'prod') renderProducts();
-            if(viewId === 'production') renderProductionSelect();
             if(viewId === 'logs') renderLogs();
             if(viewId === 'users') renderUsers(); 
             lucide.createIcons();
@@ -762,10 +691,9 @@
             t.textContent=msg; 
             t.className=`fixed top-5 right-5 px-6 py-3 rounded-lg shadow-xl text-white font-medium z-50 ${isError?'bg-red-600':'bg-slate-800'}`; 
             t.style.display='block'; 
-            setTimeout(()=>t.style.display='none',3000); 
+            setTimeout(()=>t.style.display='none',5000); 
         }
 
-        // ====== 6. FUNÇÃO DE CARREGAMENTO DO BANCO DE DADOS ======
         async function loadData() {
             try {
                 const [resProd, resCli, resLog, resDesp, resOrc, resConf] = await Promise.all([
@@ -798,9 +726,9 @@
                     paidValue: Number(l.valor_pago), deliveryAddress: l.endereco_entrega
                 }));
 
-                // LENDO AS DESPESAS - MAPEANDO O STATUS DA NOVA COLUNA DO BANCO
+                // MAPEANDO AS DESPESAS COM AS NOVAS COLUNAS
                 STATE.expenses = (resDesp.data || []).map(e => ({
-                    id: e.id, item: e.item, quantity: Number(e.quantidade), unit: e.unidade,
+                    id: e.id, fornecedor: e.fornecedor, obra: e.obra,
                     cost: Number(e.custo), date: e.data, note: e.observacao, status: e.status || 'PENDENTE'
                 }));
 
@@ -812,7 +740,7 @@
                             id: qId, date: row.data, clientName: row.cliente_nome, items: [], total: 0, 
                             status: row.status, discount: Number(row.desconto), discountType: row.tipo_desconto, 
                             paymentMethod: row.forma_pagamento, deliveryAddress: row.endereco_entrega,
-                            observacao: row.observacao // LENDO A NOVA COLUNA DE OBSERVAÇÃO
+                            observacao: row.observacao
                         };
                     }
                     quotesMap[qId].items.push({ name: row.item_nome, qty: Number(row.quantidade), price: Number(row.preco_unitario), total: Number(row.total_item) });
@@ -853,8 +781,6 @@ function getNextId(array) {
     array.forEach(item => { const val = parseInt(item.id); if(!isNaN(val) && val > max) max = val; });
     return max + 1;
 }
-
-// --- FUNÇÕES CRUD ---
 
 async function saveClient(e) {
     e.preventDefault();
@@ -917,7 +843,6 @@ async function finalizeSale(isProntaEntrega = false) {
     const customAddrCheck = document.getElementById('pos-custom-address-check').checked;
     const deliveryAddr = customAddrCheck ? document.getElementById('pos-custom-address').value : '';
 
-    // LÓGICA DE OBSERVAÇÕES
     const customObsCheck = document.getElementById('pos-custom-obs-check').checked;
     const customObs = customObsCheck ? document.getElementById('pos-custom-obs').value : '';
     
@@ -928,7 +853,7 @@ async function finalizeSale(isProntaEntrega = false) {
     else if (payment.toLowerCase().includes("boleto") || payment.toLowerCase().includes("prazo")) dueDate.setDate(dueDate.getDate() + 30);
     
     const timestamp = new Date().toISOString();
-    const newSaleId = getNextId(STATE.logs);
+    const newSaleId = String(getNextId(STATE.logs)); // Convertendo para String por segurança
     const subtotalBruto = CART.reduce((acc, i) => acc + i.total, 0);
     const fator = subtotalBruto > 0 ? (totals.total / subtotalBruto) : 1;
 
@@ -959,32 +884,46 @@ async function finalizeSale(isProntaEntrega = false) {
         const qtdEntregue = isProntaEntrega ? item.qty : 0;
 
         logsToInsert.push({
-            uid: gerarUid(), // AQUI: Gerando UID manual para garantir que exista
-            id: newSaleId, tipo: 'venda', produto_nome: item.name, quantidade: item.qty,
+            uid: gerarUid(),
+            id: newSaleId, 
+            tipo: 'venda', 
+            produto_nome: item.name, 
+            quantidade: Number(item.qty),
             data: timestamp, 
             observacao: customObs ? customObs : (isProntaEntrega ? 'Pronta Entrega PDV' : 'Venda PDV'), 
-            valor_total: (item.total * fator),
-            cliente_nome: clientName, forma_pagamento: payment, status: 'ATIVO',
-            status_entrega: statusEntrega, qtd_entregue: qtdEntregue, desconto: totals.disc,
-            status_financeiro: 'A RECEBER', vencimento: dueDate.toISOString(),
-            valor_pago: 0, endereco_entrega: deliveryAddr
+            valor_total: parseFloat((item.total * fator).toFixed(2)), // Fix decimal
+            cliente_nome: clientName, 
+            forma_pagamento: payment, 
+            status: 'ATIVO',
+            status_entrega: statusEntrega, 
+            qtd_entregue: qtdEntregue, 
+            desconto: Number(totals.disc),
+            status_financeiro: 'A RECEBER', 
+            vencimento: dueDate.toISOString().split('T')[0], // Corta a hora para não dar erro
+            valor_pago: 0, 
+            endereco_entrega: deliveryAddr
         });
         
         if (isProntaEntrega) {
             logsToInsert.push({
-                uid: gerarUid(), // AQUI: Gerando UID manual para garantir que exista
-                id: getNextId(STATE.logs) + Math.floor(Math.random() * 1000), 
-                tipo: 'entrega', produto_nome: item.name, quantidade: item.qty,
+                uid: gerarUid(),
+                id: String(getNextId(STATE.logs) + Math.floor(Math.random() * 1000)), 
+                tipo: 'entrega', produto_nome: item.name, quantidade: Number(item.qty),
                 data: timestamp, observacao: 'Retirado na hora. Ref Venda #' + newSaleId, 
                 valor_total: 0, cliente_nome: clientName, forma_pagamento: '', status: 'ATIVO',
-                status_entrega: 'ENTREGUE', qtd_entregue: item.qty, desconto: 0,
-                status_financeiro: '', vencimento: timestamp, valor_pago: 0, endereco_entrega: ''
+                status_entrega: 'ENTREGUE', qtd_entregue: Number(item.qty), desconto: 0,
+                status_financeiro: '', vencimento: timestamp.split('T')[0], valor_pago: 0, endereco_entrega: ''
             });
         }
     }
 
     const { error: errLogs } = await sb.from('logs').insert(logsToInsert);
-    if(errLogs) { showLoading(false); return showToast("Erro ao registrar os logs.", true); }
+    if(errLogs) { 
+        showLoading(false); 
+        console.error("Erro completo do Supabase:", errLogs);
+        // Exibe o motivo exato do erro na tela do usuário
+        return showToast("Erro no banco: " + errLogs.message, true); 
+    }
 
     if(CURRENT_QUOTE_ID) {
         await sb.from('orcamentos').delete().eq('id', CURRENT_QUOTE_ID);
@@ -1008,7 +947,6 @@ async function saveQuote() {
     const customAddrCheck = document.getElementById('pos-custom-address-check').checked;
     const deliveryAddr = customAddrCheck ? document.getElementById('pos-custom-address').value : '';
     
-    // LÓGICA DE OBSERVAÇÕES
     const customObsCheck = document.getElementById('pos-custom-obs-check').checked;
     const obs = customObsCheck ? document.getElementById('pos-custom-obs').value : '';
 
@@ -1022,7 +960,7 @@ async function saveQuote() {
         quantidade: item.qty, preco_unitario: item.price, total_item: item.total,
         status: 'ABERTO', desconto: totals.disc, tipo_desconto: document.getElementById('pos-discount-type').value,
         forma_pagamento: document.getElementById('pos-payment').value, endereco_entrega: deliveryAddr,
-        observacao: obs // ENVIANDO A OBSERVAÇÃO PARA O BANCO
+        observacao: obs 
     }));
 
     const { error } = await sb.from('orcamentos').insert(quotesToInsert);
@@ -1076,12 +1014,12 @@ async function confirmOrderDelivery() {
             if(prodFound) stockUpdates.push({ id: prodFound.id, qty: qty });
 
             newLogs.push({
-                uid: gerarUid(), // AQUI: Gerando UID manual para garantir que exista
-                id: maxId.toString(), tipo: 'entrega', produto_nome: prodName, quantidade: qty,
+                uid: gerarUid(),
+                id: String(maxId), tipo: 'entrega', produto_nome: prodName, quantidade: qty,
                 data: timestamp, observacao: 'Ref Venda #' + orderId, valor_total: 0,
                 cliente_nome: origLog.clientName, forma_pagamento: '', status: 'ATIVO',
                 status_entrega: 'ENTREGUE', qtd_entregue: qty, desconto: 0, status_financeiro: '',
-                vencimento: timestamp, valor_pago: 0, endereco_entrega: ''
+                vencimento: timestamp.split('T')[0], valor_pago: 0, endereco_entrega: ''
             });
             maxId++;
         }
@@ -1154,8 +1092,8 @@ async function saveReceivableEdit() {
 
     if (payVal > 0) {
         await sb.from('logs').insert([{
-            uid: gerarUid(), // AQUI: Gerando UID manual para garantir que exista
-            id: getNextId(STATE.logs), tipo: 'recebimento', produto_nome: 'Baixa de Conta', quantidade: 0,
+            uid: gerarUid(),
+            id: String(getNextId(STATE.logs)), tipo: 'recebimento', produto_nome: 'Baixa de Conta', quantidade: 0,
             data: new Date().toISOString(), observacao: 'Ref Venda #' + id, valor_total: payVal,
             cliente_nome: rowsToUpdate[0].clientName, forma_pagamento: method || rowsToUpdate[0].paymentMethod,
             status: 'ATIVO', status_financeiro: 'PAGO', valor_pago: payVal
@@ -1167,29 +1105,27 @@ async function saveReceivableEdit() {
     loadData();
 }
 
-// LÓGICA DE LANÇAMENTO E EDIÇÃO DE DESPESAS CORRIGIDA PARA EVITAR DUPLICAÇÃO
+// SALVAR DESPESA COM FORNECEDOR E OBRA
 async function saveExpense() {
     const idVal = document.getElementById('exp-id').value;
     const isNew = !idVal;
     
-    const item = document.getElementById('exp-item').value;
-    const qty = document.getElementById('exp-qty').value;
-    const unit = document.getElementById('exp-unit').value;
+    const fornecedor = document.getElementById('exp-fornecedor').value;
+    const obra = document.getElementById('exp-obra').value;
     const cost = document.getElementById('exp-cost').value;
     let date = document.getElementById('exp-date').value || new Date().toISOString();
     const note = document.getElementById('exp-note').value;
     
-    if(!item || !cost) return showToast("Preencha item e custo", true);
+    if(!fornecedor || !cost) return showToast("Preencha Fornecedor e Custo", true);
     showLoading(true);
 
     const payload = {
-        item: item, quantidade: Number(qty) || 0, unidade: unit,
+        fornecedor: fornecedor, obra: obra,
         custo: Number(cost), data: date, observacao: note, status: 'PENDENTE'
     };
 
     let error;
 
-    // SEPARANDO O INSERT E O UPDATE PARA GARANTIR QUE NÃO DUPLIQUE
     if (isNew) {
         payload.id = getNextId(STATE.expenses);
         const res = await sb.from('despesas').insert([payload]);
@@ -1202,7 +1138,8 @@ async function saveExpense() {
     if(error) { showLoading(false); return showToast("Erro: " + error.message, true); }
 
     document.getElementById('exp-id').value = "";
-    document.getElementById('exp-qty').value = "";
+    document.getElementById('exp-fornecedor').value = "";
+    document.getElementById('exp-obra').value = "";
     document.getElementById('exp-cost').value = ""; 
     document.getElementById('exp-note').value = "";
     document.getElementById('modal-expense').classList.add('hidden');
@@ -1219,15 +1156,15 @@ async function payExpense(id) {
     if(!exp) { showLoading(false); return showToast("Erro: Despesa não encontrada", true); }
     if(exp.status === 'PAGO') { showLoading(false); return showToast("Esta despesa já foi paga!", true); }
     
-    // 1. Atualiza a tabela despesas para PAGO
     const { error: err1 } = await sb.from('despesas').update({ status: 'PAGO' }).eq('id', id);
     if(err1) { showLoading(false); return showToast("Erro ao baixar: " + err1.message, true); }
     
-    // 2. Insere no LOGS para contabilizar no caixa
-    const newLogId = getNextId(STATE.logs);
+    const newLogId = String(getNextId(STATE.logs));
+    const descProduto = exp.fornecedor + (exp.obra ? ` (Obra: ${exp.obra})` : '');
+
     const { error: err2 } = await sb.from('logs').insert([{
-        uid: gerarUid(), // AQUI: Gerando UID manual para garantir que exista
-        id: newLogId, tipo: 'despesa', produto_nome: exp.item, quantidade: exp.quantity,
+        uid: gerarUid(),
+        id: newLogId, tipo: 'despesa', produto_nome: descProduto, quantidade: 1,
         data: new Date().toISOString(), observacao: exp.note, valor_total: exp.cost, status: 'ATIVO',
         status_financeiro: 'PAGO', valor_pago: exp.cost
     }]);
@@ -1242,38 +1179,12 @@ function openEditExpense(id) {
     const exp = STATE.expenses.find(e => String(e.id) === String(id));
     if(!exp) return;
     document.getElementById('exp-id').value = exp.id;
-    document.getElementById('exp-item').value = exp.item;
-    document.getElementById('exp-qty').value = exp.quantity;
-    document.getElementById('exp-unit').value = exp.unit;
+    document.getElementById('exp-fornecedor').value = exp.fornecedor || '';
+    document.getElementById('exp-obra').value = exp.obra || '';
     document.getElementById('exp-cost').value = exp.cost;
     try { document.getElementById('exp-date').value = exp.date.split('T')[0]; } catch(e){}
-    document.getElementById('exp-note').value = exp.note;
+    document.getElementById('exp-note').value = exp.note || '';
     document.getElementById('modal-expense').classList.remove('hidden');
-}
-
-
-async function saveProduction(e) {
-    e.preventDefault();
-    const pId = document.getElementById('prod-select-production').value;
-    const qty = parseFloat(document.getElementById('prod-qty-production').value);
-    
-    if(!pId || isNaN(qty) || qty <= 0) return showToast("Selecione produto e quantidade!", true);
-    showLoading(true);
-    
-    const prod = STATE.products.find(x => String(x.id) === String(pId));
-    
-    await sb.from('produtos').update({ estoque_fisico: prod.stock + qty }).eq('id', prod.id);
-
-    await sb.from('logs').insert([{
-        uid: gerarUid(), // AQUI: Gerando UID manual para garantir que exista
-        id: getNextId(STATE.logs), tipo: 'fabricacao', produto_nome: prod.name,
-        quantidade: qty, data: new Date().toISOString(), observacao: document.getElementById('prod-note-production').value,
-        status: 'ATIVO'
-    }]);
-
-    e.target.reset(); 
-    showToast("Produção Registrada!");
-    loadData();
 }
 
 async function cancelLogItem(uid) {
@@ -1306,12 +1217,6 @@ async function cancelLogItem(uid) {
             if (prodFound) {
                 let committed = Number(prodFound.committed) || 0;
                 await sb.from('produtos').update({ estoque_comprometido: Math.max(0, committed - logQty) }).eq('id', prodFound.id);
-            }
-        } 
-        else if (logType === 'fabricacao') {
-            if (prodFound) {
-                let physical = Number(prodFound.stock) || 0;
-                await sb.from('produtos').update({ estoque_fisico: Math.max(0, physical - logQty) }).eq('id', prodFound.id);
             }
         } 
         else if (logType === 'recebimento') {
@@ -1372,10 +1277,6 @@ async function cancelLogItem(uid) {
     await loadData();
 }
 
-// =========================================================
-// --- FUNÇÕES DA INTERFACE E RENDERIZAÇÃO (TELA) ---
-// =========================================================
-
 function updateClientSelects() {
     const opts = '<option value="">Consumidor Final</option>' + (STATE.clients || []).map(c => `<option value="${c.id}">${c.name}</option>`).join('');
     const clientSelect = document.getElementById('pos-client');
@@ -1403,7 +1304,6 @@ function toggleCustomAddress() {
     }
 }
 
-// NOVO: Toggle para campo de observações
 function toggleCustomObs() {
     const check = document.getElementById('pos-custom-obs-check').checked;
     const container = document.getElementById('pos-custom-obs-container');
@@ -1511,7 +1411,6 @@ function clearCart() {
     document.getElementById('pos-custom-address-container').classList.add('hidden');
     document.getElementById('pos-custom-address').value = '';
 
-    // Limpa a observação também
     document.getElementById('pos-custom-obs-check').checked = false;
     document.getElementById('pos-custom-obs-container').classList.add('hidden');
     document.getElementById('pos-custom-obs').value = '';
@@ -1692,7 +1591,6 @@ function loadQuoteToCart(id) {
         document.getElementById('pos-custom-address').value = '';
     }
 
-    // CARREGAR A OBSERVAÇÃO
     if(q.observacao) {
         document.getElementById('pos-custom-obs-check').checked = true;
         document.getElementById('pos-custom-obs-container').classList.remove('hidden');
@@ -1911,7 +1809,6 @@ function renderFinance() {
     const income = salesArr.filter(s => s.status === 'PAGO').reduce((a, b) => a + b.val, 0) +
                    salesArr.filter(s => s.status !== 'PAGO').reduce((a, b) => a + b.paid, 0);
     
-    // O SALDO AGORA SÓ DESCONTA DESPESAS PAGAS
     const expenses = STATE.expenses.filter(e => e.status === 'PAGO').reduce((a, b) => a + Number(b.cost), 0);
     
     document.getElementById('fin-income').innerText = formatMoney(income);
@@ -1988,12 +1885,11 @@ function renderFinance() {
         filteredExp = filteredExp.filter(e => new Date(e.date) <= endD);
     }
 
-    // LISTA DE DESPESAS ATUALIZADA COM BOTOES DE EDITAR/BAIXAR
     document.getElementById('fin-expense-history-list').innerHTML = filteredExp.map(e => `
         <tr class="hover:bg-slate-50 ${e.status !== 'PAGO' ? 'bg-orange-50' : ''}">
             <td class="p-3 text-slate-500">${formatDate(e.date)}</td>
-            <td class="p-3 font-medium">${e.item}</td>
-            <td class="p-3 text-center text-slate-500 text-xs">${e.quantity} ${e.unit}</td>
+            <td class="p-3 font-medium">${e.fornecedor || '-'}</td>
+            <td class="p-3 text-slate-500 text-xs">${e.obra || '-'}</td>
             <td class="p-3 font-bold text-red-500">- ${formatMoney(e.cost)}</td>
             <td class="p-3 text-slate-400 text-xs italic">${e.note || '-'}</td>
             <td class="p-3 text-right">
@@ -2092,16 +1988,6 @@ function renderDashboard() {
     }).join(''); 
 }
 
-function renderProductionSelect() { 
-    // Como a tela de produção virou relatórios e a UI foi limpa, não há mais elementos para injetar aqui.
-    // Mas as funções foram mantidas intactas caso ainda estejam rodando em background em algum lugar
-    if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
-}
-
-function renderProductionDash() {
-    // Também limpo visualmente já que os gráficos mensais foram substituídos pelos futuros Relatórios
-}
-
 function renderInvoice(sale, isQuote) {
     const el = document.getElementById('print-area');
     const title = isQuote ? "ORÇAMENTO" : "VENDA / PEDIDO";
@@ -2122,7 +2008,6 @@ function renderInvoice(sale, isQuote) {
         ? `<div style="padding: 4px; background-color: #cffafe; border-left: 3px solid #0891b2; margin-top: 5px;"><strong>ENTREGA:</strong><br>${sale.deliveryAddress}</div>` 
         : cli.address;
 
-    // APLICANDO A OBSERVAÇÃO AQUI NA IMPRESSÃO
     const obsText = sale.observacao && sale.observacao !== 'Venda PDV' && sale.observacao !== 'Pronta Entrega PDV' 
                     ? sale.observacao 
                     : 'Válido por 7 dias. Verifique os produtos no ato da entrega.';
@@ -2398,7 +2283,6 @@ function reprintSale(id) {
     setTimeout(() => window.print(), 500);
 }
 
-
 function fazerLogout() {
     localStorage.removeItem('rv_user');
     window.location.replace('index.html');
@@ -2486,6 +2370,6 @@ async function toggleUserStatus(id, currentStatus) {
     loadData();
 }
         
-    </script>
-  </body>
+</script>
+</body>
 </html>
