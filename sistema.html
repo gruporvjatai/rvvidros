@@ -649,11 +649,11 @@
         let CART = [];
         let CURRENT_QUOTE_ID = null; 
 
+        // NOVA LÓGICA DE UID (Gera número gigante e seguro para bancos)
         function gerarUid() {
-            if (typeof crypto !== 'undefined' && crypto.randomUUID) {
-                return crypto.randomUUID();
-            }
-            return Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
+            // Um número seguro de 15 dígitos baseado no Timestamp
+            // Totalmente compatível caso seu banco seja bigint, numeric ou string.
+            return Math.floor(Date.now() * 100 + Math.random() * 100).toString();
         }
 
         window.onload = function() { 
@@ -726,7 +726,6 @@
                     paidValue: Number(l.valor_pago), deliveryAddress: l.endereco_entrega
                 }));
 
-                // MAPEANDO AS DESPESAS COM AS NOVAS COLUNAS
                 STATE.expenses = (resDesp.data || []).map(e => ({
                     id: e.id, fornecedor: e.fornecedor, obra: e.obra,
                     cost: Number(e.custo), date: e.data, note: e.observacao, status: e.status || 'PENDENTE'
@@ -818,7 +817,8 @@ async function saveProduct(e) {
 
     const payload = {
         id: newId, nome: document.getElementById('prd-name').value, categoria: document.getElementById('prd-cat').value,
-        preco: parseFloat(document.getElementById('prd-price').value), estoque_fisico: parseFloat(document.getElementById('prd-stock').value),
+        preco: Number(parseFloat(document.getElementById('prd-price').value).toFixed(2)), 
+        estoque_fisico: Number(parseFloat(document.getElementById('prd-stock').value).toFixed(2)),
         estoque_comprometido: isNew ? 0 : STATE.products.find(p=>p.id==newId).committed
     };
 
@@ -853,12 +853,14 @@ async function finalizeSale(isProntaEntrega = false) {
     else if (payment.toLowerCase().includes("boleto") || payment.toLowerCase().includes("prazo")) dueDate.setDate(dueDate.getDate() + 30);
     
     const timestamp = new Date().toISOString();
-    const newSaleId = String(getNextId(STATE.logs)); // Convertendo para String por segurança
+    const newSaleId = getNextId(STATE.logs);
     const subtotalBruto = CART.reduce((acc, i) => acc + i.total, 0);
     const fator = subtotalBruto > 0 ? (totals.total / subtotalBruto) : 1;
 
     let logsToInsert = [];
+    let stockUpdates = [];
 
+    // Prepara a lógica da venda sem alterar o banco de produtos ainda
     for(let item of CART) {
         const prod = STATE.products.find(p => p.id == item.prodId);
         if(prod) {
@@ -872,12 +874,7 @@ async function finalizeSale(isProntaEntrega = false) {
                 updatePayload = { estoque_comprometido: committed + Number(item.qty) };
             }
 
-            const { error: errProd } = await sb.from('produtos').update(updatePayload).eq('id', prod.id);
-            if (errProd) {
-                console.error("Erro BD Estoque:", errProd);
-                showLoading(false);
-                return showToast("Erro ao baixar estoque do produto: " + prod.name, true);
-            }
+            stockUpdates.push({ id: prod.id, name: prod.name, payload: updatePayload });
         }
 
         const statusEntrega = isProntaEntrega ? 'ENTREGUE' : 'PENDENTE';
@@ -891,15 +888,15 @@ async function finalizeSale(isProntaEntrega = false) {
             quantidade: Number(item.qty),
             data: timestamp, 
             observacao: customObs ? customObs : (isProntaEntrega ? 'Pronta Entrega PDV' : 'Venda PDV'), 
-            valor_total: parseFloat((item.total * fator).toFixed(2)), // Fix decimal
+            valor_total: Number((item.total * fator).toFixed(2)), // Força limite de casas para não dar erro #numeric
             cliente_nome: clientName, 
             forma_pagamento: payment, 
             status: 'ATIVO',
             status_entrega: statusEntrega, 
-            qtd_entregue: qtdEntregue, 
-            desconto: Number(totals.disc),
+            qtd_entregue: Number(qtdEntregue), 
+            desconto: Number(totals.disc.toFixed(2)),
             status_financeiro: 'A RECEBER', 
-            vencimento: dueDate.toISOString().split('T')[0], // Corta a hora para não dar erro
+            vencimento: dueDate.toISOString().split('T')[0], 
             valor_pago: 0, 
             endereco_entrega: deliveryAddr
         });
@@ -907,7 +904,7 @@ async function finalizeSale(isProntaEntrega = false) {
         if (isProntaEntrega) {
             logsToInsert.push({
                 uid: gerarUid(),
-                id: String(getNextId(STATE.logs) + Math.floor(Math.random() * 1000)), 
+                id: getNextId(STATE.logs) + Math.floor(Math.random() * 1000), 
                 tipo: 'entrega', produto_nome: item.name, quantidade: Number(item.qty),
                 data: timestamp, observacao: 'Retirado na hora. Ref Venda #' + newSaleId, 
                 valor_total: 0, cliente_nome: clientName, forma_pagamento: '', status: 'ATIVO',
@@ -917,12 +914,21 @@ async function finalizeSale(isProntaEntrega = false) {
         }
     }
 
+    // 1º TENTA SALVAR A VENDA NO BANCO
     const { error: errLogs } = await sb.from('logs').insert(logsToInsert);
     if(errLogs) { 
         showLoading(false); 
         console.error("Erro completo do Supabase:", errLogs);
-        // Exibe o motivo exato do erro na tela do usuário
         return showToast("Erro no banco: " + errLogs.message, true); 
+    }
+
+    // 2º SE SALVOU A VENDA, ABATE O ESTOQUE
+    for (let update of stockUpdates) {
+        const { error: errProd } = await sb.from('produtos').update(update.payload).eq('id', update.id);
+        if (errProd) {
+            console.error("Erro BD Estoque:", errProd);
+            showToast("Aviso: Venda salva, mas falhou ao baixar estoque de " + update.name, true);
+        }
     }
 
     if(CURRENT_QUOTE_ID) {
@@ -956,10 +962,18 @@ async function saveQuote() {
     if(CURRENT_QUOTE_ID) await sb.from('orcamentos').delete().eq('id', CURRENT_QUOTE_ID);
 
     let quotesToInsert = CART.map(item => ({
-        id: budgetId, data: date, cliente_nome: clientName, item_nome: item.name,
-        quantidade: item.qty, preco_unitario: item.price, total_item: item.total,
-        status: 'ABERTO', desconto: totals.disc, tipo_desconto: document.getElementById('pos-discount-type').value,
-        forma_pagamento: document.getElementById('pos-payment').value, endereco_entrega: deliveryAddr,
+        id: budgetId, 
+        data: date, 
+        cliente_nome: clientName, 
+        item_nome: item.name,
+        quantidade: Number(item.qty), 
+        preco_unitario: Number(item.price.toFixed(2)), 
+        total_item: Number(item.total.toFixed(2)),
+        status: 'ABERTO', 
+        desconto: Number(totals.disc.toFixed(2)), 
+        tipo_desconto: document.getElementById('pos-discount-type').value,
+        forma_pagamento: document.getElementById('pos-payment').value, 
+        endereco_entrega: deliveryAddr,
         observacao: obs 
     }));
 
@@ -1015,10 +1029,10 @@ async function confirmOrderDelivery() {
 
             newLogs.push({
                 uid: gerarUid(),
-                id: String(maxId), tipo: 'entrega', produto_nome: prodName, quantidade: qty,
+                id: maxId, tipo: 'entrega', produto_nome: prodName, quantidade: Number(qty),
                 data: timestamp, observacao: 'Ref Venda #' + orderId, valor_total: 0,
                 cliente_nome: origLog.clientName, forma_pagamento: '', status: 'ATIVO',
-                status_entrega: 'ENTREGUE', qtd_entregue: qty, desconto: 0, status_financeiro: '',
+                status_entrega: 'ENTREGUE', qtd_entregue: Number(qty), desconto: 0, status_financeiro: '',
                 vencimento: timestamp.split('T')[0], valor_pago: 0, endereco_entrega: ''
             });
             maxId++;
@@ -1029,6 +1043,10 @@ async function confirmOrderDelivery() {
     showLoading(true);
 
     try {
+        // Tenta gravar a entrega antes de mexer no estoque
+        const { error: errInsert } = await sb.from('logs').insert(newLogs);
+        if(errInsert) throw errInsert;
+
         for (let u of updates) {
             const { error } = await sb.from('logs').update({ qtd_entregue: u.qtd_entregue, status_entrega: u.status_entrega }).eq('uid', u.uid);
             if(error) throw error;
@@ -1053,9 +1071,6 @@ async function confirmOrderDelivery() {
                 if(error) throw error;
             }
         }
-
-        const { error: errInsert } = await sb.from('logs').insert(newLogs);
-        if(errInsert) throw errInsert;
 
     } catch (err) {
         showLoading(false);
@@ -1084,7 +1099,7 @@ async function saveReceivableEdit() {
     let finStatus = newOrderPaid >= orderTotal ? 'PAGO' : (newOrderPaid > 0 ? 'PARCIAL' : 'PENDENTE');
 
     for(let row of rowsToUpdate) {
-        let updateData = { valor_pago: newOrderPaid, status_financeiro: finStatus };
+        let updateData = { valor_pago: Number(newOrderPaid.toFixed(2)), status_financeiro: finStatus };
         if (method) updateData.forma_pagamento = method;
         if (due) updateData.vencimento = due;
         await sb.from('logs').update(updateData).eq('uid', row.uid);
@@ -1093,10 +1108,10 @@ async function saveReceivableEdit() {
     if (payVal > 0) {
         await sb.from('logs').insert([{
             uid: gerarUid(),
-            id: String(getNextId(STATE.logs)), tipo: 'recebimento', produto_nome: 'Baixa de Conta', quantidade: 0,
-            data: new Date().toISOString(), observacao: 'Ref Venda #' + id, valor_total: payVal,
+            id: getNextId(STATE.logs), tipo: 'recebimento', produto_nome: 'Baixa de Conta', quantidade: 0,
+            data: new Date().toISOString(), observacao: 'Ref Venda #' + id, valor_total: Number(payVal.toFixed(2)),
             cliente_nome: rowsToUpdate[0].clientName, forma_pagamento: method || rowsToUpdate[0].paymentMethod,
-            status: 'ATIVO', status_financeiro: 'PAGO', valor_pago: payVal
+            status: 'ATIVO', status_financeiro: 'PAGO', valor_pago: Number(payVal.toFixed(2))
         }]);
     }
 
@@ -1121,7 +1136,7 @@ async function saveExpense() {
 
     const payload = {
         fornecedor: fornecedor, obra: obra,
-        custo: Number(cost), data: date, observacao: note, status: 'PENDENTE'
+        custo: Number(parseFloat(cost).toFixed(2)), data: date, observacao: note, status: 'PENDENTE'
     };
 
     let error;
@@ -1159,14 +1174,14 @@ async function payExpense(id) {
     const { error: err1 } = await sb.from('despesas').update({ status: 'PAGO' }).eq('id', id);
     if(err1) { showLoading(false); return showToast("Erro ao baixar: " + err1.message, true); }
     
-    const newLogId = String(getNextId(STATE.logs));
+    const newLogId = getNextId(STATE.logs);
     const descProduto = exp.fornecedor + (exp.obra ? ` (Obra: ${exp.obra})` : '');
 
     const { error: err2 } = await sb.from('logs').insert([{
         uid: gerarUid(),
         id: newLogId, tipo: 'despesa', produto_nome: descProduto, quantidade: 1,
-        data: new Date().toISOString(), observacao: exp.note, valor_total: exp.cost, status: 'ATIVO',
-        status_financeiro: 'PAGO', valor_pago: exp.cost
+        data: new Date().toISOString(), observacao: exp.note, valor_total: Number(exp.cost.toFixed(2)), status: 'ATIVO',
+        status_financeiro: 'PAGO', valor_pago: Number(exp.cost.toFixed(2))
     }]);
     
     if(err2) { showLoading(false); return showToast("Erro ao gerar log de caixa: " + err2.message, true); }
