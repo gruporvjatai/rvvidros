@@ -7,26 +7,25 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  
-         <script>
+
+    <script>
         // Se detectar que a tela é de celular ou tablet, joga direto pro mobile.html
         if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 800) {
-            window.location.replace("mobile.html");
-        }</script>
-  <!-- ==========================================LOGO NAV=============================================================-->
-  <link rel="icon" type="image/png" href="logo.png">
-  <link rel="shortcut icon" type="image/png" href="logo.png">
-  <link rel="apple-touch-icon" href="logo.png">
-
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="application-name" content="RV Vidros">
-  <meta name="apple-mobile-web-app-title" content="RV Vidros">
-  <meta name="theme-color" content="#0f172a"> 
+          window.location.replace("mobile.html");
+        }
+    </script>
+    
+    <link rel="icon" type="image/png" href="logo.png">
+    <link rel="shortcut icon" type="image/png" href="logo.png">
+    <link rel="apple-touch-icon" href="logo.png">
     <link rel="manifest" href="manifest.json">
 
-    
-    <!-- ==========================================LOGO NAV =============================================================-->
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="application-name" content="RV Portal Vidros">
+    <meta name="apple-mobile-web-app-title" content="RV Portal Vidros">
+    <meta name="theme-color" content="#0f172a"> 
+    <link rel="manifest" href="manifest.json">
 
     <style>
       body { background-color: #f1f5f9; font-family: 'Segoe UI', sans-serif; -webkit-font-smoothing: antialiased; }
@@ -72,7 +71,7 @@
             transform: translate(-50%, -50%);
             width: 450px; 
             height: 450px;
-            background-image: url('https://i.postimg.cc/MHhnPkq0/Captura-de-tela-2026-03-18-165846png-Copia-(2).png');
+            background-image: url('https://i.postimg.cc/52cvrkkP/LOGRVPORTAL.png');
             background-size: contain;
             background-position: center;
             background-repeat: no-repeat;
@@ -135,7 +134,7 @@
     <div class="w-64 bg-slate-900 text-white h-screen fixed left-0 top-0 flex flex-col shadow-2xl z-20 hidden md:flex no-print">
       <div class="p-6 flex flex-col items-center border-b border-slate-700 bg-slate-900">
         <div class="w-20 h-20 rounded-full border-4 border-cyan-600 mb-3 shadow-lg bg-white overflow-hidden p-1 bg-white">
-            <img src="https://i.postimg.cc/MHhnPkq0/Captura-de-tela-2026-03-18-165846png-Copia-(2).png" class="w-full h-full object-contain" />
+            <img src="https://i.postimg.cc/52cvrkkP/LOGRVPORTAL.png" class="w-full h-full object-contain" />
         </div>
         <h1 class="text-lg font-bold tracking-wider text-cyan-500">RV VIDROS</h1>
       </div>
@@ -708,8 +707,8 @@
         }
 
         // ====== 2. CONEXÃO COM O SUPABASE ======
-        const supabaseUrl = 'https://prfbidfbfwqihfhkcjgm.supabase.co'; 
-        const supabaseKey = 'sb_publishable__57dsH1GJxj4_jMo4hddfA_OgepVXRu';
+        const supabaseUrl = 'https://lyieiqhkspbowsrlngvn.supabase.co'; 
+        const supabaseKey = 'sb_publishable_B2a4vA22qf4XGcrxPDRAaw_13rW51uI';
         const sb = window.supabase.createClient(supabaseUrl, supabaseKey);
 
         // ====== 3. VARIÁVEIS GERAIS DO SISTEMA ======
@@ -717,7 +716,16 @@
         let CART = [];
         let CURRENT_QUOTE_ID = null; 
 
-        // ====== 4. INICIALIZAÇÃO ======
+        // ====== 4. FUNÇÃO GERADORA DE UID PARA ESTORNOS ======
+        // Garante que todo log inserido tenha um UID único, mesmo se o banco não gerar
+        function gerarUid() {
+            if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+                return crypto.randomUUID();
+            }
+            return Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
+        }
+
+        // ====== 5. INICIALIZAÇÃO ======
         window.onload = function() { 
             if (dadosUsuario) {
                 showLoading(true); 
@@ -757,7 +765,7 @@
             setTimeout(()=>t.style.display='none',3000); 
         }
 
-        // ====== 5. FUNÇÃO DE CARREGAMENTO DO BANCO DE DADOS ======
+        // ====== 6. FUNÇÃO DE CARREGAMENTO DO BANCO DE DADOS ======
         async function loadData() {
             try {
                 const [resProd, resCli, resLog, resDesp, resOrc, resConf] = await Promise.all([
@@ -951,6 +959,7 @@ async function finalizeSale(isProntaEntrega = false) {
         const qtdEntregue = isProntaEntrega ? item.qty : 0;
 
         logsToInsert.push({
+            uid: gerarUid(), // AQUI: Gerando UID manual para garantir que exista
             id: newSaleId, tipo: 'venda', produto_nome: item.name, quantidade: item.qty,
             data: timestamp, 
             observacao: customObs ? customObs : (isProntaEntrega ? 'Pronta Entrega PDV' : 'Venda PDV'), 
@@ -963,6 +972,7 @@ async function finalizeSale(isProntaEntrega = false) {
         
         if (isProntaEntrega) {
             logsToInsert.push({
+                uid: gerarUid(), // AQUI: Gerando UID manual para garantir que exista
                 id: getNextId(STATE.logs) + Math.floor(Math.random() * 1000), 
                 tipo: 'entrega', produto_nome: item.name, quantidade: item.qty,
                 data: timestamp, observacao: 'Retirado na hora. Ref Venda #' + newSaleId, 
@@ -1066,6 +1076,7 @@ async function confirmOrderDelivery() {
             if(prodFound) stockUpdates.push({ id: prodFound.id, qty: qty });
 
             newLogs.push({
+                uid: gerarUid(), // AQUI: Gerando UID manual para garantir que exista
                 id: maxId.toString(), tipo: 'entrega', produto_nome: prodName, quantidade: qty,
                 data: timestamp, observacao: 'Ref Venda #' + orderId, valor_total: 0,
                 cliente_nome: origLog.clientName, forma_pagamento: '', status: 'ATIVO',
@@ -1143,6 +1154,7 @@ async function saveReceivableEdit() {
 
     if (payVal > 0) {
         await sb.from('logs').insert([{
+            uid: gerarUid(), // AQUI: Gerando UID manual para garantir que exista
             id: getNextId(STATE.logs), tipo: 'recebimento', produto_nome: 'Baixa de Conta', quantidade: 0,
             data: new Date().toISOString(), observacao: 'Ref Venda #' + id, valor_total: payVal,
             cliente_nome: rowsToUpdate[0].clientName, forma_pagamento: method || rowsToUpdate[0].paymentMethod,
@@ -1214,6 +1226,7 @@ async function payExpense(id) {
     // 2. Insere no LOGS para contabilizar no caixa
     const newLogId = getNextId(STATE.logs);
     const { error: err2 } = await sb.from('logs').insert([{
+        uid: gerarUid(), // AQUI: Gerando UID manual para garantir que exista
         id: newLogId, tipo: 'despesa', produto_nome: exp.item, quantidade: exp.quantity,
         data: new Date().toISOString(), observacao: exp.note, valor_total: exp.cost, status: 'ATIVO',
         status_financeiro: 'PAGO', valor_pago: exp.cost
@@ -1252,6 +1265,7 @@ async function saveProduction(e) {
     await sb.from('produtos').update({ estoque_fisico: prod.stock + qty }).eq('id', prod.id);
 
     await sb.from('logs').insert([{
+        uid: gerarUid(), // AQUI: Gerando UID manual para garantir que exista
         id: getNextId(STATE.logs), tipo: 'fabricacao', produto_nome: prod.name,
         quantidade: qty, data: new Date().toISOString(), observacao: document.getElementById('prod-note-production').value,
         status: 'ATIVO'
@@ -1264,7 +1278,7 @@ async function saveProduction(e) {
 
 async function cancelLogItem(uid) {
     if (!uid || uid === 'undefined' || uid === 'null') {
-        return showToast("Erro: Esse registro não possui UID.", true);
+        return showToast("Erro: Esse registro não possui UID no banco de dados.", true);
     }
 
     const logItem = STATE.logs.find(l => String(l.uid) === String(uid));
@@ -2116,7 +2130,7 @@ function renderInvoice(sale, isQuote) {
     el.innerHTML = `
     <div class="invoice-full">
         <div class="header-section">
-            <div class="logo-area"><img src="https://i.postimg.cc/MHhnPkq0/Captura-de-tela-2026-03-18-165846png-Copia-(2).png" style="max-height: 80px;" /></div>
+            <div class="logo-area"><img src="https://i.postimg.cc/52cvrkkP/LOGRVPORTAL.png" style="max-height: 80px;" /></div>
             <div class="company-details">
                 <h2 class="company-title">RV VIDROS</h2>
                 <div class="company-info">CNPJ: 30.942.123/0001-02 </div>
@@ -2164,7 +2178,7 @@ function printFullOrder(orderId) {
         cnpj: "30.942.123/0001-02",
         phone: "(64) 3636-4861",
         address: "Jataí - GO",
-        logoUrl: "https://i.postimg.cc/MHhnPkq0/Captura-de-tela-2026-03-18-165846png-Copia-(2).png" 
+        logoUrl: "https://i.postimg.cc/52cvrkkP/LOGRVPORTAL.png" 
     };
     
     const addressToShow = items[0].deliveryAddress 
@@ -2278,7 +2292,7 @@ function printExpeditionHistory() {
         cnpj: "30.942.123/0001-02",
         phone: "(64) 3636-4861",
         address: "Jataí - GO",
-        logoUrl: "https://i.postimg.cc/MHhnPkq0/Captura-de-tela-2026-03-18-165846png-Copia-(2).png" 
+        logoUrl: "https://i.postimg.cc/52cvrkkP/LOGRVPORTAL.png" 
     };
 
     let totalItems = 0;
@@ -2430,20 +2444,33 @@ async function saveUser(e) {
     if(dadosUsuario.nivel !== 'admin') return showToast("Acesso negado!", true);
     showLoading(true);
     
-    const isNew = !document.getElementById('usr-id').value;
+    const idVal = document.getElementById('usr-id').value;
+    const isNew = !idVal;
+    
     const payload = {
         nome: document.getElementById('usr-name').value,
         login: document.getElementById('usr-login').value.toLowerCase().trim(),
         senha: document.getElementById('usr-pass').value,
         nivel_acesso: document.getElementById('usr-role').value
     };
-    if(!isNew) payload.id = document.getElementById('usr-id').value;
+    
+    if(!isNew) {
+        payload.id = idVal;
+        const usrAtual = STATE.users.find(u => String(u.id) === String(idVal));
+        if(usrAtual) {
+            payload.ativo = usrAtual.ativo;
+            if(usrAtual.created_at) payload.created_at = usrAtual.created_at;
+        }
+    } else {
+        payload.ativo = true;
+        payload.created_at = new Date().toISOString();
+    }
 
     const { error } = await sb.from('usuarios').upsert(payload);
     if(error) { showLoading(false); return showToast("Erro: " + error.message, true); }
     
     document.getElementById('user-form-container').classList.add('hidden');
-    showToast("Usuário salvo com sucesso!");
+    showToast(isNew ? "Usuário salvo com sucesso!" : "Usuário atualizado com sucesso!");
     loadData();
 }
 
