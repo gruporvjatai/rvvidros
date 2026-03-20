@@ -92,6 +92,20 @@
     <script>
         lucide.createIcons();
 
+
+        // ====== 1. VERIFICAÇÃO DE LOGIN GLOBAL ======
+        let dadosUsuario = null;
+        const userSessao = localStorage.getItem('rv_user');
+
+        if (!userSessao) {
+            // Se não tem usuário logado, chuta de volta pro login
+            window.location.replace('index.html');
+        } else {
+            // Se estiver logado, salva os dados na variável global
+            dadosUsuario = JSON.parse(userSessao);
+        }
+
+        // ====== 2. supabase======
         const supabaseUrl = 'https://prfbidfbfwqihfhkcjgm.supabase.co'; 
         const supabaseKey = 'sb_publishable__57dsH1GJxj4_jMo4hddfA_OgepVXRu';
         const sb = window.supabase.createClient(supabaseUrl, supabaseKey);
