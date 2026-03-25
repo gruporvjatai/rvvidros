@@ -93,10 +93,7 @@
         // ====== 1. VERIFICAÇÃO DE LOGIN GLOBAL ======
         let dadosUsuario = null;
         const userSessao = localStorage.getItem('rv_user');
-
-       // ====== 1. VERIFICAÇÃO DE LOGIN GLOBAL ======
-        const userSessao = localStorage.getItem('rv_user');
-        
+       
         if (userSessao) {
             // Se já estiver logado, pula a tela de login e vai direto pro sistema
             window.location.replace('sistema.html');
