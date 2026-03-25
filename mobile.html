@@ -8,7 +8,6 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-    
     <link rel="icon" type="image/png" href="logo.png">
     <link rel="shortcut icon" type="image/png" href="logo.png">
     <link rel="apple-touch-icon" href="logo.png">
@@ -30,17 +29,12 @@
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
         .loader { border: 3px solid #e2e8f0; border-top: 3px solid #0891b2; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        
-        /* Ocultar barra de rolagem em áreas de scroll horizontal */
-        .hide-scrollbar::-webkit-scrollbar { display: none; }
-        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
         @media print {
             .no-print { display: none !important; }
             .print-only { display: block !important; }
             @page { size: A4; margin: 10mm; }
             body { background: white; margin: 0; padding: 0; color: #1e293b; }
-            /* Estilos de impressão da ficha da obra mantidos da versão original */
             .invoice-box-orig { width: 100%; border: 1px solid #000; margin: 0 auto; }
             .header-orig { display: flex; border-bottom: 1px solid #000; }
             .logo-box-orig { width: 100px; padding: 5px; border-right: 1px solid #000; display: flex; align-items: center; justify-content: center; }
@@ -93,56 +87,62 @@
                 <h2 class="text-xl font-bold text-slate-800">Gestão de Obras</h2>
                 <button onclick="openObraForm()" class="bg-cyan-600 active:bg-cyan-700 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-lg"><i data-lucide="plus"></i></button>
             </div>
-            
             <div class="flex gap-2 mb-6 bg-white p-3 rounded-2xl shadow-sm border border-slate-200 focus-within:border-cyan-500 transition-colors">
                 <i data-lucide="search" class="text-slate-400 w-5 h-5"></i>
                 <input type="text" id="obra-search" placeholder="Buscar por obra ou cliente..." class="w-full bg-transparent outline-none text-sm font-medium" onkeyup="renderObras()">
             </div>
-
             <div id="obras-list" class="flex flex-col gap-3"></div>
         </div>
 
         <div id="view-fin" class="hidden-section">
             <div class="flex justify-between items-center mb-5">
                 <h2 class="text-xl font-bold text-slate-800">Financeiro</h2>
-                <button onclick="document.getElementById('exp-id').value=''; document.getElementById('modal-expense').classList.remove('hidden')" class="bg-red-500 active:bg-red-600 text-white text-xs px-3 py-2 rounded-lg font-bold shadow-md flex items-center gap-1"><i data-lucide="minus-circle" class="w-4 h-4"></i> Lançar Saída</button>
+                <button onclick="document.getElementById('exp-id').value=''; document.getElementById('modal-expense').classList.remove('hidden')" class="bg-red-500 active:bg-red-600 text-white text-xs px-3 py-2 rounded-lg font-bold shadow-md flex items-center gap-1"><i data-lucide="plus"></i> Nova Despesa</button>
             </div>
             
-            <div class="flex gap-3 overflow-x-auto hide-scrollbar snap-x pb-4 mb-2">
-                <div class="min-w-[150px] snap-center bg-indigo-50 p-4 rounded-2xl border border-indigo-100 shadow-sm flex-1">
-                    <p class="text-indigo-800 text-[10px] font-bold uppercase mb-1">Saldo Atual</p>
-                    <h3 id="fin-balance" class="text-xl font-black text-indigo-700">R$ 0,00</h3>
+            <div class="grid grid-cols-2 gap-3 mb-8">
+                <div class="col-span-2 bg-slate-800 p-5 rounded-2xl shadow-md text-white flex justify-between items-center relative overflow-hidden">
+                    <div class="relative z-10">
+                        <p class="text-[10px] font-bold uppercase mb-1 text-slate-400 tracking-wider">Saldo em Caixa</p>
+                        <h3 id="fin-balance" class="text-3xl font-black text-white">R$ 0,00</h3>
+                    </div>
+                    <i data-lucide="wallet" class="w-12 h-12 text-slate-700 absolute right-4 -bottom-2 z-0 transform rotate-[-15deg]"></i>
                 </div>
-                <div class="min-w-[140px] snap-center bg-green-50 p-4 rounded-2xl border border-green-100 shadow-sm flex-1">
-                    <p class="text-green-800 text-[10px] font-bold uppercase mb-1">Receitas</p>
-                    <h3 id="fin-income" class="text-xl font-bold text-green-600">R$ 0,00</h3>
+                <div class="bg-green-50 p-4 rounded-2xl border border-green-200 shadow-sm flex flex-col justify-center">
+                    <p class="text-green-800 text-[10px] font-bold uppercase mb-1">Entradas Pagas</p>
+                    <h3 id="fin-income" class="text-lg font-bold text-green-700 truncate">R$ 0,00</h3>
                 </div>
-                <div class="min-w-[140px] snap-center bg-red-50 p-4 rounded-2xl border border-red-100 shadow-sm flex-1">
-                    <p class="text-red-800 text-[10px] font-bold uppercase mb-1">Saídas</p>
-                    <h3 id="fin-expenses" class="text-xl font-bold text-red-600">R$ 0,00</h3>
+                <div class="bg-red-50 p-4 rounded-2xl border border-red-200 shadow-sm flex flex-col justify-center">
+                    <p class="text-red-800 text-[10px] font-bold uppercase mb-1">Saídas Pagas</p>
+                    <h3 id="fin-expenses" class="text-lg font-bold text-red-700 truncate">R$ 0,00</h3>
                 </div>
             </div>
+
+            <h3 class="font-bold text-slate-800 mb-4 text-sm flex items-center gap-2"><i data-lucide="alert-circle" class="w-4 h-4 text-orange-500"></i> Gestão de Pendências</h3>
             
-            <h3 class="font-bold text-slate-700 mb-3 text-sm flex items-center gap-2 mt-4"><i data-lucide="arrow-down-to-line" class="w-4 h-4 text-indigo-600"></i> Contas a Receber</h3>
-            <div id="fin-receivables-list" class="flex flex-col gap-3 mb-6"></div>
+            <div class="mb-5">
+                <h4 class="text-xs font-black text-green-700 uppercase tracking-wider mb-2 ml-1 flex items-center gap-1"><i data-lucide="arrow-down-to-line" class="w-3 h-3"></i> A Receber (Obras)</h4>
+                <div id="fin-receivables-list" class="flex flex-col gap-3"></div>
+            </div>
 
-            <div class="flex justify-between items-center mb-3 mt-6">
-                <h3 class="font-bold text-slate-700 text-sm flex items-center gap-2"><i data-lucide="check-circle" class="w-4 h-4 text-green-500"></i> Recebimentos</h3>
+            <div class="mb-8">
+                <h4 class="text-xs font-black text-red-700 uppercase tracking-wider mb-2 ml-1 flex items-center gap-1"><i data-lucide="arrow-up-from-line" class="w-3 h-3"></i> A Pagar (Despesas)</h4>
+                <div id="fin-payables-list" class="flex flex-col gap-3"></div>
             </div>
-            <div class="flex gap-2 mb-3">
-                <input type="date" id="inc-filter-start" class="p-2 border rounded-lg text-xs w-full outline-none bg-white" onchange="renderFinance()">
-                <input type="date" id="inc-filter-end" class="p-2 border rounded-lg text-xs w-full outline-none bg-white" onchange="renderFinance()">
-            </div>
-            <div id="fin-income-history-list" class="flex flex-col gap-3 mb-6"></div>
 
-            <div class="flex justify-between items-center mb-3 mt-6">
-                <h3 class="font-bold text-slate-700 text-sm flex items-center gap-2"><i data-lucide="list" class="w-4 h-4 text-red-500"></i> Saídas (Despesas)</h3>
+            <h3 class="font-bold text-slate-800 mb-3 text-sm flex items-center gap-2 pt-6 border-t border-slate-200"><i data-lucide="list" class="w-4 h-4 text-slate-500"></i> Extrato de Caixa</h3>
+            <div class="flex gap-2 mb-4 bg-white p-2 rounded-xl shadow-sm border border-slate-200">
+                <div class="flex-1">
+                    <label class="block text-[9px] font-bold text-slate-400 uppercase ml-1">De</label>
+                    <input type="date" id="fin-ext-start" class="w-full p-1.5 bg-transparent text-xs outline-none" onchange="renderFinance()">
+                </div>
+                <div class="w-px bg-slate-200 my-1"></div>
+                <div class="flex-1">
+                    <label class="block text-[9px] font-bold text-slate-400 uppercase ml-1">Até</label>
+                    <input type="date" id="fin-ext-end" class="w-full p-1.5 bg-transparent text-xs outline-none" onchange="renderFinance()">
+                </div>
             </div>
-            <div class="flex gap-2 mb-3">
-                <input type="date" id="exp-filter-start" class="p-2 border rounded-lg text-xs w-full outline-none bg-white" onchange="renderFinance()">
-                <input type="date" id="exp-filter-end" class="p-2 border rounded-lg text-xs w-full outline-none bg-white" onchange="renderFinance()">
-            </div>
-            <div id="fin-expense-history-list" class="flex flex-col gap-3 pb-6"></div>
+            <div id="fin-extrato-list" class="flex flex-col gap-3 pb-6"></div>
         </div>
 
         <div id="view-clients" class="hidden-section">
@@ -392,7 +392,7 @@
             if(viewId === 'obras') renderObras();
             if(viewId === 'fin') renderFinance();
             if(viewId === 'clients') renderClients();
-            if(viewId === 'reports') renderReports(); // Novo render
+            if(viewId === 'reports') renderReports(); 
             
             lucide.createIcons();
             window.scrollTo(0,0);
@@ -403,7 +403,6 @@
         function formatDate(d) { try { if(!d) return '-'; const pt = d.split('-'); return pt.length===3 ? `${pt[2]}/${pt[1]}/${pt[0]}` : new Date(d).toLocaleDateString('pt-BR'); } catch(e) { return '-'; } }
         function showLoading(show) { document.getElementById('loading').style.display = show ? 'flex' : 'none'; }
         
-        // Toast centralizado para mobile
         function showToast(msg, isError) { 
             const t = document.getElementById('toast'); 
             t.textContent = msg; 
@@ -483,7 +482,7 @@
             const ativas = STATE.obras.filter(o => o.status !== 'CANCELADA');
 
             if(ativas.length === 0) {
-                grid.innerHTML = `<div class="text-center text-slate-400 p-10 text-sm">Nenhuma obra em andamento.</div>`;
+                grid.innerHTML = `<div class="text-center text-slate-400 p-10 text-sm border-2 border-dashed border-slate-200 rounded-2xl">Nenhuma obra em andamento.</div>`;
                 return;
             }
 
@@ -536,7 +535,6 @@
                 return;
             }
 
-            // Transformando tabela em Cards
             list.innerHTML = filtered.map(o => {
                 const cliName = STATE.clients.find(c => String(c.id) === String(o.clientId))?.name || 'Cliente';
                 return `
@@ -661,91 +659,81 @@
             let totalSaidas = STATE.expenses.filter(e => e.status === 'PAGO').reduce((a, b) => a + Number(b.cost), 0);
 
             const recBody = document.getElementById('fin-receivables-list');
-            let recHtml = '';
+            const payBody = document.getElementById('fin-payables-list');
+            const extBody = document.getElementById('fin-extrato-list');
 
+            // 1. A RECEBER
+            let recHtml = '';
             contasReceber.forEach(r => {
                 totalRecebido += r.paidValue;
                 const falta = r.totalValue - r.paidValue;
                 if(falta > 0) {
-                    // Convertendo Tabela de Contas a Receber para Cards Mobile
                     recHtml += `
-                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col gap-2">
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <span class="text-[10px] font-bold text-slate-400 uppercase">OBRA #${r.refId}</span>
-                                <h4 class="font-bold text-slate-700 text-sm leading-tight">${r.clientName}</h4>
-                                <p class="text-[11px] text-slate-500 mt-1 truncate max-w-[200px]">${r.note}</p>
-                            </div>
+                    <div class="bg-white p-3 rounded-2xl shadow-sm border border-slate-200 flex justify-between items-center border-l-4 border-l-green-500 relative">
+                        <div class="flex-1 pr-2">
+                            <span class="text-[10px] font-bold text-slate-400 uppercase">Obra #${r.refId}</span>
+                            <h4 class="font-bold text-slate-700 text-sm leading-tight">${r.clientName}</h4>
+                            <p class="text-[10px] text-red-600 font-bold mt-1">Falta: ${formatMoney(falta)}</p>
                         </div>
-                        <div class="flex justify-between items-center mt-2 pt-3 border-t border-slate-50">
-                            <div>
-                                <span class="block text-[9px] text-slate-400 uppercase font-bold">Falta Pagar</span>
-                                <span class="font-black text-red-600 text-sm">${formatMoney(falta)}</span>
-                            </div>
-                            <button onclick="openBaixaReceita('${r.uid}', ${r.totalValue}, ${r.paidValue})" class="bg-green-100 text-green-700 hover:bg-green-200 active:bg-green-300 text-xs font-bold py-2 px-4 rounded-xl flex items-center gap-1"><i data-lucide="check" class="w-3 h-3"></i> Baixar</button>
-                        </div>
+                        <button onclick="openBaixaReceita('${r.uid}', ${r.totalValue}, ${r.paidValue})" class="bg-green-100 text-green-700 hover:bg-green-200 active:bg-green-300 text-[10px] font-bold py-2 px-3 rounded-xl flex items-center gap-1"><i data-lucide="check" class="w-3 h-3"></i> Baixar</button>
                     </div>`;
                 }
             });
-            recBody.innerHTML = recHtml || `<div class="text-center text-slate-400 text-xs py-4">Nenhuma conta pendente.</div>`;
+            recBody.innerHTML = recHtml || `<div class="text-center text-slate-400 text-xs py-3 bg-slate-100 rounded-xl border border-dashed border-slate-300">Não há contas a receber.</div>`;
 
+            // 2. A PAGAR
+            let payHtml = '';
+            STATE.expenses.filter(e => e.status !== 'PAGO').forEach(e => {
+                payHtml += `
+                <div class="bg-white p-3 rounded-2xl shadow-sm border border-slate-200 flex justify-between items-center border-l-4 border-l-red-500 relative">
+                    <div class="flex-1 pr-2">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase">${formatDate(e.date)}</span>
+                        <h4 class="font-bold text-slate-700 text-sm leading-tight">${e.fornecedor || 'Despesa'}</h4>
+                        <p class="text-[10px] text-red-600 font-bold mt-1">Pagar: ${formatMoney(e.cost)}</p>
+                    </div>
+                    <div class="flex gap-1.5 items-center">
+                        <button onclick="openEditExpense('${e.id}')" class="p-2 bg-slate-100 text-slate-600 rounded-lg active:bg-slate-200"><i data-lucide="edit-3" class="w-3 h-3"></i></button>
+                        <button onclick="payExpense('${e.id}')" class="bg-red-100 text-red-700 active:bg-red-200 text-[10px] font-bold py-2 px-3 rounded-xl flex items-center gap-1"><i data-lucide="check" class="w-3 h-3"></i> Pagar</button>
+                    </div>
+                </div>`;
+            });
+            payBody.innerHTML = payHtml || `<div class="text-center text-slate-400 text-xs py-3 bg-slate-100 rounded-xl border border-dashed border-slate-300">Não há contas a pagar.</div>`;
+
+            // Atualiza Dashboard (Cards Topo)
             document.getElementById('fin-income').innerText = formatMoney(totalRecebido);
             document.getElementById('fin-expenses').innerText = formatMoney(totalSaidas);
             document.getElementById('fin-balance').innerText = formatMoney(totalRecebido - totalSaidas);
 
-            // Filtros de Histórico de Recebimentos
-            let incomeLogs = STATE.logs.filter(l => l.type === 'recebimento' && l.status !== 'CANCELADO');
-            const incStart = document.getElementById('inc-filter-start')?.value;
-            const incEnd = document.getElementById('inc-filter-end')?.value;
-            if(incStart) incomeLogs = incomeLogs.filter(i => new Date(i.date) >= new Date(incStart));
-            if(incEnd) { let endD = new Date(incEnd); endD.setHours(23,59,59); incomeLogs = incomeLogs.filter(i => new Date(i.date) <= endD); }
-            incomeLogs.sort((a,b) => new Date(b.date) - new Date(a.date));
+            // 3. EXTRATO UNIFICADO
+            let extrato = [];
+            STATE.logs.filter(l => l.type === 'recebimento' && l.status !== 'CANCELADO').forEach(l => {
+                extrato.push({ type: 'in', date: l.date, title: l.note || 'Recebimento', desc: l.method || '-', val: l.totalValue, id: l.uid });
+            });
+            STATE.expenses.filter(e => e.status === 'PAGO').forEach(e => {
+                extrato.push({ type: 'out', date: e.date, title: e.fornecedor || 'Despesa', desc: e.obra ? 'Obra: ' + e.obra : 'Geral', val: e.cost, id: e.id });
+            });
 
-            // Listagem Histórico Recebimentos Mobile
-            document.getElementById('fin-income-history-list').innerHTML = incomeLogs.length ? incomeLogs.map(i => `
-                <div class="bg-white p-3 rounded-2xl shadow-sm border border-slate-200 flex justify-between items-center">
-                    <div class="flex flex-col">
-                        <span class="text-[10px] text-slate-400 font-medium">${formatDate(i.date)}</span>
-                        <span class="text-xs font-bold text-slate-700 leading-tight mt-0.5">${i.note}</span>
-                        <span class="text-[10px] text-slate-500">${i.method || '-'}</span>
-                    </div>
-                    <div class="flex flex-col items-end gap-2">
-                        <span class="font-black text-green-600 text-sm">+ ${formatMoney(i.totalValue)}</span>
-                        <button onclick="estornarRecebimento('${i.uid}')" class="text-[9px] font-bold text-red-500 uppercase tracking-wider py-1 px-2 rounded bg-red-50 border border-red-100 active:bg-red-100">Estornar</button>
-                    </div>
-                </div>
-            `).join('') : `<div class="text-center text-slate-400 text-xs py-4">Vazio</div>`;
-
-            // Filtros de Despesas
-            let filteredExp = STATE.expenses.slice();
-            const start = document.getElementById('exp-filter-start')?.value;
-            const end = document.getElementById('exp-filter-end')?.value;
-            if(start) filteredExp = filteredExp.filter(e => new Date(e.date) >= new Date(start));
-            if(end) { let endD = new Date(end); endD.setHours(23,59,59); filteredExp = filteredExp.filter(e => new Date(e.date) <= endD); }
-            filteredExp.sort((a,b) => new Date(b.date) - new Date(a.date));
-
-            // Listagem Despesas Mobile
-            document.getElementById('fin-expense-history-list').innerHTML = filteredExp.length ? filteredExp.map(e => `
-                <div class="bg-white p-3 rounded-2xl shadow-sm border ${e.status !== 'PAGO' ? 'border-orange-200 bg-orange-50/30' : 'border-slate-200'} flex justify-between items-center">
-                    <div class="flex flex-col">
-                        <span class="text-[10px] text-slate-400 font-medium">${formatDate(e.date)} ${e.status !== 'PAGO' ? '<span class="text-orange-500 font-bold ml-1">(Pendente)</span>' : ''}</span>
-                        <span class="text-xs font-bold text-slate-700 mt-0.5">${e.fornecedor || '-'}</span>
-                        <span class="text-[10px] text-slate-500">${e.obra ? 'Obra: '+e.obra : '-'}</span>
-                    </div>
-                    <div class="flex flex-col items-end gap-2">
-                        <span class="font-black text-red-600 text-sm">- ${formatMoney(e.cost)}</span>
-                        ${e.status !== 'PAGO' ? `
-                            <div class="flex gap-2 mt-1">
-                                <button onclick="openEditExpense('${e.id}')" class="p-1.5 bg-slate-100 text-slate-600 rounded-lg active:bg-slate-200"><i data-lucide="edit-3" class="w-3 h-3"></i></button>
-                                <button onclick="payExpense('${e.id}')" class="text-[10px] font-bold text-white uppercase py-1.5 px-3 rounded-lg bg-green-600 active:bg-green-700 shadow-sm">Baixar</button>
-                            </div>
-                        ` : `
-                            <button onclick="estornarDespesa('${e.id}')" class="text-[9px] font-bold text-red-500 uppercase tracking-wider py-1 px-2 rounded bg-red-50 border border-red-100 active:bg-red-100">Estornar</button>
-                        `}
-                    </div>
-                </div>
-            `).join('') : `<div class="text-center text-slate-400 text-xs py-4">Vazio</div>`;
+            const startDate = document.getElementById('fin-ext-start')?.value;
+            const endDate = document.getElementById('fin-ext-end')?.value;
+            if(startDate) extrato = extrato.filter(i => new Date(i.date) >= new Date(startDate));
+            if(endDate) { let endD = new Date(endDate); endD.setHours(23,59,59); extrato = extrato.filter(i => new Date(i.date) <= endD); }
             
+            extrato.sort((a,b) => new Date(b.date) - new Date(a.date));
+
+            extBody.innerHTML = extrato.length ? extrato.map(i => `
+                <div class="bg-white p-3 rounded-2xl shadow-sm border border-slate-200 flex justify-between items-center">
+                    <div class="flex-1 pr-2">
+                        <span class="text-[9px] text-slate-400 font-bold uppercase tracking-wider">${formatDate(i.date)}</span>
+                        <h4 class="text-xs font-bold text-slate-700 leading-tight">${i.title}</h4>
+                        <p class="text-[10px] text-slate-500 truncate mt-0.5">${i.desc}</p>
+                    </div>
+                    <div class="flex flex-col items-end gap-1.5">
+                        <span class="font-black text-sm ${i.type === 'in' ? 'text-green-600' : 'text-red-600'}">${i.type === 'in' ? '+' : '-'} ${formatMoney(i.val)}</span>
+                        <button onclick="${i.type === 'in' ? `estornarRecebimento('${i.id}')` : `estornarDespesa('${i.id}')`}" class="text-[9px] font-bold text-slate-400 uppercase bg-slate-50 border border-slate-200 py-1 px-2 rounded active:bg-red-50 active:text-red-500">Estornar</button>
+                    </div>
+                </div>
+            `).join('') : `<div class="text-center text-slate-400 text-xs py-4">Nenhuma movimentação no período.</div>`;
+
             lucide.createIcons();
         }
 
@@ -937,15 +925,19 @@
             const list = document.getElementById('clients-list');
             if(!list) return;
 
-            // Transformando em Cards com botão de WhatsApp
-            list.innerHTML = (STATE.clients||[]).map(c => {
+            if (!STATE.clients || STATE.clients.length === 0) {
+                list.innerHTML = '<div class="text-center text-slate-400 p-8 text-sm border-2 border-dashed border-slate-200 rounded-2xl">Nenhum cliente cadastrado ainda.</div>';
+                return;
+            }
+
+            list.innerHTML = STATE.clients.map(c => {
                 const num = (c.phone || '').replace(/\D/g, '');
                 const btnWapp = num ? `<a href="https://wa.me/55${num}" target="_blank" class="w-10 h-10 bg-green-100 text-green-600 rounded-full flex items-center justify-center active:bg-green-200"><i data-lucide="message-circle" class="w-5 h-5"></i></a>` : '';
                 
                 return `
                 <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex justify-between items-center relative">
                     <div class="flex-1 pr-4">
-                        <h3 class="font-bold text-slate-800 text-sm">${c.name}</h3>
+                        <h3 class="font-bold text-slate-800 text-sm">${c.name || 'Sem Nome'}</h3>
                         <p class="text-[11px] text-slate-500 mt-1 flex flex-col gap-0.5">
                             <span><i data-lucide="phone" class="w-3 h-3 inline"></i> ${c.phone || '-'}</span>
                             <span><i data-lucide="file-text" class="w-3 h-3 inline"></i> ${c.doc || '-'}</span>
@@ -973,13 +965,11 @@
             const startInput = document.getElementById('rep-start');
             const endInput = document.getElementById('rep-end');
             
-            // Seta mês atual como padrão se estiver vazio
             if(!startInput.value || !endInput.value) {
                 const date = new Date();
                 const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
                 const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0);
                 
-                // Formata para YYYY-MM-DD mantendo fuso local
                 startInput.value = firstDay.toLocaleDateString('en-CA'); 
                 endInput.value = lastDay.toLocaleDateString('en-CA');
             }
@@ -992,14 +982,12 @@
             const end = document.getElementById('rep-end').value;
             const clientName = document.getElementById('rep-client').value.toLowerCase();
             
-            // Filtra logs base de Obras
             let vendas = STATE.logs.filter(l => l.type === 'receita_obra' && l.status !== 'CANCELADO');
             
             if(start) vendas = vendas.filter(v => new Date(v.date.split('T')[0]) >= new Date(start));
             if(end) vendas = vendas.filter(v => new Date(v.date.split('T')[0]) <= new Date(end));
             if(clientName) vendas = vendas.filter(v => (v.clientName || '').toLowerCase().includes(clientName));
             
-            // Ordena mais recente primeiro
             vendas.sort((a,b) => new Date(b.date) - new Date(a.date));
 
             const total = vendas.reduce((acc, curr) => acc + curr.totalValue, 0);
