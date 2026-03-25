@@ -427,13 +427,27 @@
                     sb.from('despesas').select('*')
                 ]);
 
+                // ======== DEBUG FORÇADO AQUI ========
+                if (resCli.error) {
+                    console.error("❌ ERRO NO SUPABASE (CLIENTES):", resCli.error);
+                    alert("Erro ao puxar clientes do banco: " + resCli.error.message);
+                } else {
+                    console.log("✅ DADOS DOS CLIENTES:", resCli.data);
+                }
+                // ===================================
+
                 STATE.obras = (resObras.data || []).map(o => ({
                     id: o.id, name: o.nome, clientId: o.cliente_id, value: Number(o.valor),
                     start: o.data_inicio, end: o.data_conclusao, address: o.endereco, status: o.status
                 }));
 
+                // Se houver divergência no nome das colunas, o erro acontece aqui:
                 STATE.clients = (resCli.data || []).map(c => ({
-                    id: c.id, name: c.nome, phone: c.telefone, doc: c.documento, address: c.endereco
+                    id: c.id, 
+                    name: c.nome, 
+                    phone: c.telefone, 
+                    doc: c.documento, 
+                    address: c.endereco
                 }));
 
                 STATE.logs = (resLog.data || []).map(l => ({
@@ -460,8 +474,8 @@
                 showLoading(false);
             } catch (err) {
                 showLoading(false);
-                showToast("Erro ao conectar no banco.", true);
-                console.error(err);
+                showToast("Erro fatal ao carregar dados. Veja o console.", true);
+                console.error("ERRO FATAL:", err);
             }
         }
 
