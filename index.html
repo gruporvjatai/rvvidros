@@ -17,8 +17,8 @@
 
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="application-name" content="RV Portal Madeiras">
-    <meta name="apple-mobile-web-app-title" content="RV Portal Madeiras">
+    <meta name="application-name" content="RV Vidros">
+    <meta name="apple-mobile-web-app-title" content="RV Vidros">
     <meta name="theme-color" content="#0f172a"> 
     <link rel="manifest" href="manifest.json">
 <!-- ==========================================LOGO NAV =============================================================-->
@@ -94,9 +94,12 @@
         let dadosUsuario = null;
         const userSessao = localStorage.getItem('rv_user');
 
-        if (!userSessao) {
-            // Se não tem usuário logado, chuta de volta pro login
-            window.location.replace('index.html');
+       // ====== 1. VERIFICAÇÃO DE LOGIN GLOBAL ======
+        const userSessao = localStorage.getItem('rv_user');
+        
+        if (userSessao) {
+            // Se já estiver logado, pula a tela de login e vai direto pro sistema
+            window.location.replace('sistema.html');
         } else {
             // Se estiver logado, salva os dados na variável global
             dadosUsuario = JSON.parse(userSessao);
