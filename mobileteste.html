@@ -1097,8 +1097,11 @@ function showDailyReport() {
     `;
     
     showLoading(false);
+    
+    // MOSTRA A TELA DE RESULTADO
     document.getElementById('view-report-result').classList.remove('hidden');
     document.getElementById('view-report-result').classList.add('flex');
+    
     lucide.createIcons();
 }
 
@@ -1156,9 +1159,11 @@ function showPeriodReport() {
 
     filteredObras.sort((a, b) => new Date(b.date) - new Date(a.date));
 
+    // FECHA O MODAL ANTES DE MOSTRAR O RESULTADO
+    closePeriodReportModal();
+
     if (filteredObras.length === 0) {
         showLoading(false);
-        closePeriodReportModal();
         return showToast("Nenhuma obra encontrada no período.", true);
     }
 
@@ -1233,9 +1238,11 @@ function showPeriodReport() {
     `;
     
     showLoading(false);
-    closePeriodReportModal();
+    
+    // MOSTRA A TELA DE RESULTADO
     document.getElementById('view-report-result').classList.remove('hidden');
     document.getElementById('view-report-result').classList.add('flex');
+    
     lucide.createIcons();
 }
     
