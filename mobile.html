@@ -12,15 +12,12 @@
     <link rel="shortcut icon" type="image/png" href="logo.png">
     <link rel="apple-touch-icon" href="logo.png">
     
-
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="application-name" content="RV Vidros">
     <meta name="apple-mobile-web-app-title" content="RV Vidros">
     <meta name="theme-color" content="#0f172a"> 
     <link rel="manifest" href="manifest.json">
-
-    <meta name="theme-color" content="#0f172a"> 
 
     <style>
         body { background-color: #f8fafc; font-family: 'Segoe UI', sans-serif; -webkit-font-smoothing: antialiased; }
@@ -153,43 +150,77 @@
             <div id="clients-list" class="flex flex-col gap-3"></div>
         </div>
 
-        <div id="view-reports" class="hidden-section">
-            <h2 class="text-xl font-bold text-slate-800 mb-5">Vendas por Período</h2>
-            
-            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 mb-6">
-                <div class="grid grid-cols-2 gap-3 mb-3">
-                    <div>
-                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Data Inicial</label>
-                        <input type="date" id="rep-start" class="w-full p-2.5 border rounded-lg text-sm outline-none bg-slate-50" onchange="filtrarRelatorios()">
-                    </div>
-                    <div>
-                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Data Final</label>
-                        <input type="date" id="rep-end" class="w-full p-2.5 border rounded-lg text-sm outline-none bg-slate-50" onchange="filtrarRelatorios()">
-                    </div>
-                </div>
-                <div>
-                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Cliente (Opcional)</label>
-                    <div class="flex gap-2 border rounded-lg bg-slate-50 p-2 focus-within:border-cyan-500 transition-colors">
-                        <i data-lucide="search" class="text-slate-400 w-5 h-5"></i>
-                        <input type="text" id="rep-client" placeholder="Digite o nome..." class="w-full bg-transparent outline-none text-sm" onkeyup="filtrarRelatorios()">
-                    </div>
-                </div>
+                        <!-- ==================== NOVA ABA RELATÓRIOS (MENU ESTILO RV PORTAL) ==================== -->
+<div id="view-reports" class="hidden-section">
+    <h2 class="text-2xl font-black text-slate-800 mb-6 flex items-center gap-2">
+        <i data-lucide="pie-chart" class="text-cyan-600"></i> Relatórios
+    </h2>
+    
+    <div class="flex flex-col gap-4">
+        <button onclick="showDailyReport()" class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden flex items-center justify-between active:scale-95 transition-transform text-left w-full">
+            <div>
+                <h3 class="text-base font-black text-slate-800 mb-1">Faturamento do Dia</h3>
+                <p class="text-xs text-slate-500 font-medium">Resumo das obras vendidas hoje.</p>
             </div>
-
-            <div class="bg-indigo-600 rounded-2xl p-5 shadow-lg text-white mb-6 flex justify-between items-center">
-                <div>
-                    <p class="text-[10px] font-bold text-indigo-200 uppercase tracking-wider">Total de Vendas</p>
-                    <h3 id="rep-total" class="text-2xl font-black mt-1">R$ 0,00</h3>
-                </div>
-                <div class="text-right">
-                    <i data-lucide="trending-up" class="w-8 h-8 opacity-50 mb-1 inline-block"></i>
-                    <p id="rep-count" class="text-xs font-medium text-indigo-100">0 obras</p>
-                </div>
+            <div class="w-12 h-12 rounded-full bg-cyan-50 text-cyan-600 flex items-center justify-center shrink-0">
+                <i data-lucide="sun" class="w-6 h-6"></i>
             </div>
+        </button>
+        
+        <button onclick="openPeriodReportModal()" class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden flex items-center justify-between active:scale-95 transition-transform text-left w-full">
+            <div>
+                <h3 class="text-base font-black text-slate-800 mb-1">Vendas por Período</h3>
+                <p class="text-xs text-slate-500 font-medium">Filtros de data e cliente.</p>
+            </div>
+            <div class="w-12 h-12 rounded-full bg-cyan-50 text-cyan-600 flex items-center justify-center shrink-0">
+                <i data-lucide="calendar-search" class="w-6 h-6"></i>
+            </div>
+        </button>
+    </div>
+</div>
 
-            <h3 class="font-bold text-slate-700 mb-3 text-sm">Detalhamento</h3>
-            <div id="rep-list" class="flex flex-col gap-3 pb-6"></div>
+<!-- MODAL DE FILTRO DE PERÍODO -->
+<div id="modal-period-report" class="hidden fixed inset-0 bg-slate-900/70 z-[80] flex items-center justify-center p-4 animate-[fadeIn_0.2s]">
+    <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl flex flex-col overflow-hidden">
+        <div class="p-4 border-b flex justify-between items-center bg-slate-50">
+            <h3 class="font-black text-slate-800 text-lg flex items-center gap-2"><i data-lucide="calendar-search" class="text-cyan-600 w-5 h-5"></i> Vendas por Período</h3>
+            <button onclick="closePeriodReportModal()" class="text-slate-400 hover:text-red-500 bg-white rounded-full p-1"><i data-lucide="x"></i></button>
         </div>
+        <div class="p-5 space-y-4">
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Data Início</label>
+                    <input type="date" id="rep-per-start" class="w-full p-3 border rounded-xl bg-slate-50 font-bold text-slate-700 outline-none focus:ring-2 focus:ring-cyan-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Data Fim</label>
+                    <input type="date" id="rep-per-end" class="w-full p-3 border rounded-xl bg-slate-50 font-bold text-slate-700 outline-none focus:ring-2 focus:ring-cyan-500">
+                </div>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Cliente (Opcional)</label>
+                <input type="text" id="rep-per-client" placeholder="Digite o nome..." class="w-full p-3 border rounded-xl bg-slate-50 font-medium text-slate-700 outline-none focus:ring-2 focus:ring-cyan-500">
+            </div>
+        </div>
+        <div class="p-4 border-t bg-slate-50 flex gap-3">
+            <button onclick="closePeriodReportModal()" class="flex-1 py-3 bg-white border border-slate-300 rounded-xl font-bold text-slate-600 active:scale-95">Cancelar</button>
+            <button onclick="showPeriodReport()" class="flex-1 py-3 bg-cyan-600 rounded-xl font-bold text-white shadow-lg active:scale-95 flex items-center justify-center gap-2"><i data-lucide="eye" class="w-4 h-4"></i> Visualizar</button>
+        </div>
+    </div>
+</div>
+
+<!-- TELA DE RESULTADO DO RELATÓRIO -->
+<div id="view-report-result" class="hidden fixed inset-0 bg-slate-50 z-[90] flex-col animate-[fadeIn_0.2s]">
+    <div class="bg-slate-900 text-white p-4 flex justify-between items-center shadow-md shrink-0">
+        <div class="flex items-center gap-3">
+            <button onclick="closeReportView()" class="text-white p-2 bg-slate-800 rounded-full hover:bg-slate-700 active:scale-95">
+                <i data-lucide="arrow-left" class="w-5 h-5"></i>
+            </button>
+            <h2 class="text-lg font-black tracking-wider text-white">RELATÓRIO</h2>
+        </div>
+    </div>
+    <div class="flex-1 overflow-y-auto p-4 bg-slate-100" id="report-result-content"></div>
+</div>
 
     </main>
 
@@ -377,7 +408,6 @@
             const target = document.getElementById('view-' + viewId);
             if(target) { target.classList.remove('hidden-section'); target.classList.add('active-section'); }
             
-            // Atualiza cores da Navigation Bar
             document.querySelectorAll('.nav-btn').forEach(btn => {
                 btn.classList.remove('text-cyan-600');
                 btn.classList.add('text-slate-400');
@@ -417,6 +447,13 @@
             return max + 1;
         }
 
+        function toLocalYYYYMMDD(dateObj) {
+                const y = dateObj.getFullYear();
+                const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+                const d = String(dateObj.getDate()).padStart(2, '0');
+                return `${y}-${m}-${d}`;
+            }
+
         // ======= CARREGAMENTO DE DADOS =======
         async function loadData() {
             try {
@@ -427,27 +464,13 @@
                     sb.from('despesas').select('*')
                 ]);
 
-                // ======== DEBUG FORÇADO AQUI ========
-                if (resCli.error) {
-                    console.error("❌ ERRO NO SUPABASE (CLIENTES):", resCli.error);
-                    alert("Erro ao puxar clientes do banco: " + resCli.error.message);
-                } else {
-                    console.log("✅ DADOS DOS CLIENTES:", resCli.data);
-                }
-                // ===================================
-
                 STATE.obras = (resObras.data || []).map(o => ({
                     id: o.id, name: o.nome, clientId: o.cliente_id, value: Number(o.valor),
                     start: o.data_inicio, end: o.data_conclusao, address: o.endereco, status: o.status
                 }));
 
-                // Se houver divergência no nome das colunas, o erro acontece aqui:
                 STATE.clients = (resCli.data || []).map(c => ({
-                    id: c.id, 
-                    name: c.nome, 
-                    phone: c.telefone, 
-                    doc: c.documento, 
-                    address: c.endereco
+                    id: c.id, name: c.nome, phone: c.telefone, doc: c.documento, address: c.endereco
                 }));
 
                 STATE.logs = (resLog.data || []).map(l => ({
@@ -676,7 +699,6 @@
             const payBody = document.getElementById('fin-payables-list');
             const extBody = document.getElementById('fin-extrato-list');
 
-            // 1. A RECEBER
             let recHtml = '';
             contasReceber.forEach(r => {
                 totalRecebido += r.paidValue;
@@ -695,7 +717,6 @@
             });
             recBody.innerHTML = recHtml || `<div class="text-center text-slate-400 text-xs py-3 bg-slate-100 rounded-xl border border-dashed border-slate-300">Não há contas a receber.</div>`;
 
-            // 2. A PAGAR
             let payHtml = '';
             STATE.expenses.filter(e => e.status !== 'PAGO').forEach(e => {
                 payHtml += `
@@ -713,12 +734,10 @@
             });
             payBody.innerHTML = payHtml || `<div class="text-center text-slate-400 text-xs py-3 bg-slate-100 rounded-xl border border-dashed border-slate-300">Não há contas a pagar.</div>`;
 
-            // Atualiza Dashboard (Cards Topo)
             document.getElementById('fin-income').innerText = formatMoney(totalRecebido);
             document.getElementById('fin-expenses').innerText = formatMoney(totalSaidas);
             document.getElementById('fin-balance').innerText = formatMoney(totalRecebido - totalSaidas);
 
-            // 3. EXTRATO UNIFICADO
             let extrato = [];
             STATE.logs.filter(l => l.type === 'recebimento' && l.status !== 'CANCELADO').forEach(l => {
                 extrato.push({ type: 'in', date: l.date, title: l.note || 'Recebimento', desc: l.method || '-', val: l.totalValue, id: l.uid });
@@ -974,53 +993,262 @@
             } else { document.getElementById('cli-id').value=''; document.getElementById('cli-name').value=''; document.getElementById('cli-phone').value=''; document.getElementById('cli-doc').value=''; document.getElementById('cli-addr').value=''; }
         }
 
-        // ======= ABA 5: RELATÓRIOS =======
-        function renderReports() {
-            const startInput = document.getElementById('rep-start');
-            const endInput = document.getElementById('rep-end');
-            
-            if(!startInput.value || !endInput.value) {
-                const date = new Date();
-                const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
-                const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0);
-                
-                startInput.value = firstDay.toLocaleDateString('en-CA'); 
-                endInput.value = lastDay.toLocaleDateString('en-CA');
-            }
-            
-            filtrarRelatorios();
-        }
+        
 
-        function filtrarRelatorios() {
-            const start = document.getElementById('rep-start').value;
-            const end = document.getElementById('rep-end').value;
-            const clientName = document.getElementById('rep-client').value.toLowerCase();
-            
-            let vendas = STATE.logs.filter(l => l.type === 'receita_obra' && l.status !== 'CANCELADO');
-            
-            if(start) vendas = vendas.filter(v => new Date(v.date.split('T')[0]) >= new Date(start));
-            if(end) vendas = vendas.filter(v => new Date(v.date.split('T')[0]) <= new Date(end));
-            if(clientName) vendas = vendas.filter(v => (v.clientName || '').toLowerCase().includes(clientName));
-            
-            vendas.sort((a,b) => new Date(b.date) - new Date(a.date));
 
-            const total = vendas.reduce((acc, curr) => acc + curr.totalValue, 0);
-            document.getElementById('rep-total').innerText = formatMoney(total);
-            document.getElementById('rep-count').innerText = vendas.length + (vendas.length === 1 ? " obra" : " obras");
-            
-            const list = document.getElementById('rep-list');
-            list.innerHTML = vendas.map(v => `
-                <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex justify-between items-center">
-                    <div class="flex-1 pr-3">
-                        <span class="text-[10px] font-bold text-indigo-400 uppercase tracking-wider">${formatDate(v.date)}</span>
-                        <h4 class="font-bold text-slate-800 text-sm mt-0.5 leading-tight">${v.clientName || 'Cliente'}</h4>
-                        <p class="text-[11px] text-slate-500 mt-1 truncate">${v.note || 'Obra #' + v.refId}</p>
+// ======= ABA 5: RELATÓRIOS (CORRIGIDO - FUNCIONA COM OBRAS) =======
+function renderReports() {
+    lucide.createIcons();
+}
+
+// Faturamento do Dia = Obras criadas hoje
+function showDailyReport() {
+    showLoading(true);
+    const hoje = new Date();
+    const hojeStr = toLocalYYYYMMDD(hoje);
+    const dataHojeLocal = hoje.toLocaleDateString('pt-BR');
+    
+    let totalObras = 0;
+    let totalValor = 0;
+    let totalRecebido = 0;
+    let rowsHtml = '';
+    
+    // Busca obras criadas hoje (pela data do log 'receita_obra')
+    const obrasHoje = STATE.logs.filter(l => {
+        if (l.type !== 'receita_obra' || l.status === 'CANCELADO') return false;
+        if (!l.date) return false;
+        
+        // CORREÇÃO: Extrai apenas a data (YYYY-MM-DD) do timestamp
+        const dataLog = l.date.split('T')[0];
+        return dataLog === hojeStr;
+    });
+
+    console.log('Obras hoje:', obrasHoje.length, 'Data hoje:', hojeStr);
+
+    obrasHoje.forEach(v => {
+        totalValor += v.totalValue;
+        totalRecebido += (v.paidValue || 0);
+        totalObras++;
+        
+        // Status de pagamento
+        const pago = v.paidValue || 0;
+        const falta = v.totalValue - pago;
+        let statusBadge = '';
+        if (v.finStatus === 'PAGO') statusBadge = '<span class="bg-green-100 text-green-700 text-[9px] font-bold px-2 py-0.5 rounded ml-2">PAGO</span>';
+        else if (v.finStatus === 'PARCIAL') statusBadge = '<span class="bg-orange-100 text-orange-700 text-[9px] font-bold px-2 py-0.5 rounded ml-2">PARCIAL</span>';
+        else statusBadge = '<span class="bg-red-100 text-red-700 text-[9px] font-bold px-2 py-0.5 rounded ml-2">A RECEBER</span>';
+        
+        rowsHtml += `
+            <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm mb-2 flex flex-col gap-1">
+                <div class="flex justify-between items-start">
+                    <div class="flex items-center flex-wrap">
+                        <span class="font-bold text-sm text-slate-800">Obra #${v.refId}</span>
+                        ${statusBadge}
                     </div>
-                    <div class="font-black text-indigo-700 text-sm">${formatMoney(v.totalValue)}</div>
+                    <span class="font-black text-cyan-600">${formatMoney(v.totalValue)}</span>
                 </div>
-            `).join('') || '<div class="text-center text-slate-400 text-sm py-6 bg-white rounded-2xl border border-slate-200 border-dashed">Nenhuma venda encontrada no período.</div>';
-        }
+                <div class="flex justify-between items-center">
+                    <span class="text-[10px] text-slate-500">${v.clientName || 'Cliente'}</span>
+                    <span class="text-[10px] text-slate-400">${v.note || ''}</span>
+                </div>
+                <div class="flex justify-between items-center mt-1 pt-1 border-t border-slate-100">
+                    <span class="text-[10px] text-slate-500">Recebido: ${formatMoney(pago)}</span>
+                    ${falta > 0 ? `<span class="text-[10px] text-red-500 font-bold">Falta: ${formatMoney(falta)}</span>` : ''}
+                </div>
+            </div>
+        `;
+    });
 
+    if (obrasHoje.length === 0) {
+        rowsHtml = '<div class="text-center p-6 text-slate-400 font-bold">Nenhuma obra registrada hoje.</div>';
+    }
+
+    const el = document.getElementById('report-result-content');
+    el.innerHTML = `
+        <div class="max-w-md mx-auto">
+            <div class="bg-white p-5 rounded-2xl border shadow-sm mb-4 text-center">
+                <h3 class="font-black text-xl text-cyan-600 mb-1">FATURAMENTO DO DIA</h3>
+                <p class="text-xs font-bold text-slate-500">${dataHojeLocal}</p>
+            </div>
+            <div class="mb-4">
+                <h4 class="font-bold text-slate-700 mb-2 uppercase text-xs">Obras Registradas Hoje</h4>
+                ${rowsHtml}
+            </div>
+            <div class="bg-slate-900 p-5 rounded-2xl shadow-lg mb-8 text-white">
+                <h4 class="font-bold text-slate-400 mb-3 uppercase text-xs">Resumo do Dia</h4>
+                <div class="flex justify-between items-center mb-1">
+                    <span class="text-sm">Qtd. Obras:</span>
+                    <span class="text-sm font-bold">${totalObras}</span>
+                </div>
+                <div class="flex justify-between items-center mb-1">
+                    <span class="text-sm">Total Vendido:</span>
+                    <span class="text-sm font-bold text-cyan-400">${formatMoney(totalValor)}</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-sm">Total Recebido:</span>
+                    <span class="text-sm font-bold text-green-400">${formatMoney(totalRecebido)}</span>
+                </div>
+                <div class="flex justify-between items-center mt-3 pt-3 border-t border-slate-700">
+                    <span class="font-black text-lg">A RECEBER:</span>
+                    <span class="font-black text-xl ${(totalValor - totalRecebido) > 0 ? 'text-orange-400' : 'text-green-400'}">${formatMoney(totalValor - totalRecebido)}</span>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    showLoading(false);
+    
+    // MOSTRA A TELA DE RESULTADO
+    document.getElementById('view-report-result').classList.remove('hidden');
+    document.getElementById('view-report-result').classList.add('flex');
+    
+    lucide.createIcons();
+}
+
+function openPeriodReportModal() {
+    const hoje = new Date();
+    const primeiroDia = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+    const ultimoDia = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0);
+    
+    document.getElementById('rep-per-start').value = toLocalYYYYMMDD(primeiroDia);
+    document.getElementById('rep-per-end').value = toLocalYYYYMMDD(ultimoDia);
+    document.getElementById('rep-per-client').value = '';
+    document.getElementById('modal-period-report').classList.remove('hidden');
+}
+
+function closePeriodReportModal() {
+    document.getElementById('modal-period-report').classList.add('hidden');
+}
+
+function closeReportView() {
+    const resultView = document.getElementById('view-report-result');
+    resultView.classList.add('hidden');
+    resultView.classList.add('hidden-section');  // <<<< ADICIONE ESTA LINHA
+    resultView.classList.remove('flex');
+    document.getElementById('report-result-content').innerHTML = '';
+}
+
+function showPeriodReport() {
+    showLoading(true);
+    const start = document.getElementById('rep-per-start').value;
+    const end = document.getElementById('rep-per-end').value;
+    const client = document.getElementById('rep-per-client').value.toLowerCase().trim();
+
+    console.log('Filtros - Início:', start, 'Fim:', end, 'Cliente:', client);
+    console.log('Total de logs receita_obra:', STATE.logs.filter(l => l.type === 'receita_obra').length);
+
+    // Filtra obras pela data de criação (log 'receita_obra')
+    let filteredObras = STATE.logs.filter(l => l.type === 'receita_obra' && l.status !== 'CANCELADO');
+
+    // CORREÇÃO: Extrai apenas a data (YYYY-MM-DD) para comparação
+    if (start) {
+        filteredObras = filteredObras.filter(v => {
+            const dataLog = v.date.split('T')[0];
+            return dataLog >= start;
+        });
+    }
+    if (end) {
+        filteredObras = filteredObras.filter(v => {
+            const dataLog = v.date.split('T')[0];
+            return dataLog <= end;
+        });
+    }
+    if (client) {
+        filteredObras = filteredObras.filter(v => (v.clientName || '').toLowerCase().includes(client));
+    }
+
+    console.log('Obras filtradas:', filteredObras.length);
+
+    filteredObras.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    // FECHA O MODAL ANTES DE MOSTRAR O RESULTADO
+    closePeriodReportModal();
+
+    if (filteredObras.length === 0) {
+        showLoading(false);
+        return showToast("Nenhuma obra encontrada no período.", true);
+    }
+
+    let totalValor = 0;
+    let totalRecebido = 0;
+    
+    let rowsHtml = filteredObras.map(v => {
+        totalValor += v.totalValue;
+        totalRecebido += (v.paidValue || 0);
+        
+        const falta = v.totalValue - (v.paidValue || 0);
+        let statusBadge = '';
+        if (v.finStatus === 'PAGO') statusBadge = '<span class="bg-green-100 text-green-700 text-[9px] font-bold px-2 py-0.5 rounded">PAGO</span>';
+        else if (v.finStatus === 'PARCIAL') statusBadge = '<span class="bg-orange-100 text-orange-700 text-[9px] font-bold px-2 py-0.5 rounded">PARCIAL</span>';
+        else statusBadge = '<span class="bg-red-100 text-red-700 text-[9px] font-bold px-2 py-0.5 rounded">A RECEBER</span>';
+        
+        return `
+            <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm mb-2 flex flex-col gap-1">
+                <div class="flex justify-between items-start">
+                    <div class="flex items-center flex-wrap gap-1">
+                        <span class="font-bold text-sm text-slate-800">Obra #${v.refId}</span>
+                        ${statusBadge}
+                    </div>
+                    <span class="font-black text-cyan-600">${formatMoney(v.totalValue)}</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-[10px] text-slate-500">${v.clientName || 'Cliente'}</span>
+                    <span class="text-[10px] text-slate-400"><i data-lucide="calendar" class="inline w-3 h-3"></i> ${formatDate(v.date)}</span>
+                </div>
+                <div class="text-[10px] text-slate-500 truncate">${v.note || ''}</div>
+                <div class="flex justify-between items-center mt-1 pt-1 border-t border-slate-100">
+                    <span class="text-[10px] text-slate-500">Recebido: ${formatMoney(v.paidValue || 0)}</span>
+                    ${falta > 0 ? `<span class="text-[10px] text-red-500 font-bold">Falta: ${formatMoney(falta)}</span>` : ''}
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    const filtroTexto = `${start ? formatDate(start) : 'Início'} até ${end ? formatDate(end) : 'Hoje'} ${client ? '| Cliente: ' + client : ''}`;
+    
+    const el = document.getElementById('report-result-content');
+    el.innerHTML = `
+        <div class="max-w-md mx-auto">
+            <div class="bg-white p-5 rounded-2xl border shadow-sm mb-4 text-center">
+                <h3 class="font-black text-xl text-cyan-600 mb-2">OBRAS POR PERÍODO</h3>
+                <div class="bg-cyan-50 p-2 rounded-lg text-[11px] font-bold text-cyan-800">${filtroTexto}</div>
+            </div>
+            <div class="mb-4">
+                <h4 class="font-bold text-slate-700 mb-2 uppercase text-xs">Obras do Período</h4>
+                ${rowsHtml}
+            </div>
+            <div class="bg-slate-900 p-5 rounded-2xl shadow-lg mb-8 text-white">
+                <h4 class="font-bold text-slate-400 mb-3 uppercase text-xs">Resumo do Período</h4>
+                <div class="flex justify-between items-center mb-1">
+                    <span class="text-sm">Qtd. Obras:</span>
+                    <span class="text-sm font-bold">${filteredObras.length}</span>
+                </div>
+                <div class="flex justify-between items-center mb-1">
+                    <span class="text-sm">Total Vendido:</span>
+                    <span class="text-sm font-bold text-cyan-400">${formatMoney(totalValor)}</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-sm">Total Recebido:</span>
+                    <span class="text-sm font-bold text-green-400">${formatMoney(totalRecebido)}</span>
+                </div>
+                <div class="flex justify-between items-center mt-3 pt-3 border-t border-slate-700">
+                    <span class="font-black text-lg">A RECEBER:</span>
+                    <span class="font-black text-xl ${(totalValor - totalRecebido) > 0 ? 'text-orange-400' : 'text-green-400'}">${formatMoney(totalValor - totalRecebido)}</span>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    showLoading(false);
+    
+    // MOSTRA A TELA DE RESULTADO
+    document.getElementById('view-report-result').classList.remove('hidden');
+    document.getElementById('view-report-result').classList.add('flex');
+    document.getElementById('view-report-result').classList.remove('hidden-section');
+    
+    lucide.createIcons();
+}
+    
         // ======= IMPRESSÃO =======
         function printObra(id) {
             const obra = STATE.obras.find(o => String(o.id) === String(id));
