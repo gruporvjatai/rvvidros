@@ -1121,8 +1121,10 @@ function closePeriodReportModal() {
 }
 
 function closeReportView() {
-    document.getElementById('view-report-result').classList.add('hidden');
-    document.getElementById('view-report-result').classList.remove('flex');
+    const resultView = document.getElementById('view-report-result');
+    resultView.classList.add('hidden');
+    resultView.classList.add('hidden-section');  // <<<< ADICIONE ESTA LINHA
+    resultView.classList.remove('flex');
     document.getElementById('report-result-content').innerHTML = '';
 }
 
@@ -1242,6 +1244,7 @@ function showPeriodReport() {
     // MOSTRA A TELA DE RESULTADO
     document.getElementById('view-report-result').classList.remove('hidden');
     document.getElementById('view-report-result').classList.add('flex');
+    document.getElementById('view-report-result').classList.remove('hidden-section');
     
     lucide.createIcons();
 }
