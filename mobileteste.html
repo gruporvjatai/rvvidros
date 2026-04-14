@@ -1,0 +1,1067 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <base target="_top">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ERP Mobile - RV VIDROS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <link rel="icon" type="image/png" href="logo.png">
+    <link rel="shortcut icon" type="image/png" href="logo.png">
+    <link rel="apple-touch-icon" href="logo.png">
+    
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="application-name" content="RV Vidros">
+    <meta name="apple-mobile-web-app-title" content="RV Vidros">
+    <meta name="theme-color" content="#0f172a"> 
+    <link rel="manifest" href="manifest.json">
+
+    <style>
+        body { background-color: #f8fafc; font-family: 'Segoe UI', sans-serif; -webkit-font-smoothing: antialiased; }
+        .hidden-section { display: none !important; }
+        .active-section { display: block !important; animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        .loader { border: 3px solid #e2e8f0; border-top: 3px solid #0891b2; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        @media print {
+            .no-print { display: none !important; }
+            .print-only { display: block !important; }
+            @page { size: A4; margin: 10mm; }
+            body { background: white; margin: 0; padding: 0; color: #1e293b; }
+            .invoice-box-orig { width: 100%; border: 1px solid #000; margin: 0 auto; }
+            .header-orig { display: flex; border-bottom: 1px solid #000; }
+            .logo-box-orig { width: 100px; padding: 5px; border-right: 1px solid #000; display: flex; align-items: center; justify-content: center; }
+            .company-box-orig { flex: 1; padding: 10px; font-size: 11px; border-right: 1px solid #000; }
+            .info-box-orig { width: 180px; padding: 10px; font-size: 11px; background-color: #f9f9f9; text-align: right;}
+            .section-title-orig { background-color: #eee; border-top: 1px solid #000; border-bottom: 1px solid #000; font-weight: bold; padding: 5px 10px; font-size: 12px; text-transform: uppercase; }
+            .content-box { padding: 15px; font-size: 13px; line-height: 1.6; }
+            .grid-info { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }
+            .info-label { font-weight: bold; font-size: 11px; color: #64748b; text-transform: uppercase; }
+            .info-value { font-weight: bold; font-size: 14px; color: #0f172a; margin-bottom: 10px; border-bottom: 1px dashed #cbd5e1; padding-bottom: 5px; }
+            .signature-area { margin-top: 80px; display: flex; justify-content: space-around; }
+            .signature-line { width: 40%; border-top: 1px solid #000; text-align: center; font-size: 10px; font-weight: bold; padding-top: 5px; }
+        }
+        .print-only { display: none; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+
+    <header class="bg-slate-900 text-white p-4 flex justify-between items-center sticky top-0 z-30 shadow-md no-print">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-white rounded-full p-1 flex items-center justify-center overflow-hidden border-2 border-cyan-600">
+                <img src="logo.png" class="w-full h-full object-contain" onerror="this.style.display='none'" />
+            </div>
+            <h1 class="text-lg font-bold tracking-wider text-cyan-500">RV VIDROS</h1>
+        </div>
+        <button onclick="fazerLogout()" class="text-slate-400 hover:text-red-400 p-2 transition-colors">
+            <i data-lucide="log-out" class="w-6 h-6"></i>
+        </button>
+    </header>
+
+    <main class="w-full pb-24 px-4 pt-6 no-print min-h-screen">
+
+        <div id="loading" class="hidden fixed inset-0 bg-black/40 z-[60] flex items-center justify-center backdrop-blur-sm">
+            <div class="bg-white p-6 rounded-2xl flex flex-col items-center shadow-2xl">
+                <div class="loader mb-4"></div>
+                <span class="font-bold text-slate-700">Processando...</span>
+            </div>
+        </div>
+        <div id="toast" class="hidden fixed top-20 left-1/2 -translate-x-1/2 px-6 py-3 rounded-full shadow-2xl text-white font-medium z-[70] transition-opacity duration-300 whitespace-nowrap text-sm"></div>
+
+        <div id="view-dash" class="hidden-section">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold text-slate-800">Obras em Andamento</h2>
+            </div>
+            <div id="dash-grid" class="flex flex-col gap-4"></div>
+        </div>
+
+        <div id="view-obras" class="hidden-section">
+            <div class="flex justify-between items-center mb-5">
+                <h2 class="text-xl font-bold text-slate-800">Gestão de Obras</h2>
+                <button onclick="openObraForm()" class="bg-cyan-600 active:bg-cyan-700 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-lg"><i data-lucide="plus"></i></button>
+            </div>
+            <div class="flex gap-2 mb-6 bg-white p-3 rounded-2xl shadow-sm border border-slate-200 focus-within:border-cyan-500 transition-colors">
+                <i data-lucide="search" class="text-slate-400 w-5 h-5"></i>
+                <input type="text" id="obra-search" placeholder="Buscar por obra ou cliente..." class="w-full bg-transparent outline-none text-sm font-medium" onkeyup="renderObras()">
+            </div>
+            <div id="obras-list" class="flex flex-col gap-3"></div>
+        </div>
+
+        <div id="view-fin" class="hidden-section">
+            <div class="flex justify-between items-center mb-5">
+                <h2 class="text-xl font-bold text-slate-800">Financeiro</h2>
+                <button onclick="document.getElementById('exp-id').value=''; document.getElementById('modal-expense').classList.remove('hidden')" class="bg-red-500 active:bg-red-600 text-white text-xs px-3 py-2 rounded-lg font-bold shadow-md flex items-center gap-1"><i data-lucide="plus"></i> Nova Despesa</button>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-3 mb-8">
+                <div class="col-span-2 bg-slate-800 p-5 rounded-2xl shadow-md text-white flex justify-between items-center relative overflow-hidden">
+                    <div class="relative z-10">
+                        <p class="text-[10px] font-bold uppercase mb-1 text-slate-400 tracking-wider">Saldo em Caixa</p>
+                        <h3 id="fin-balance" class="text-3xl font-black text-white">R$ 0,00</h3>
+                    </div>
+                    <i data-lucide="wallet" class="w-12 h-12 text-slate-700 absolute right-4 -bottom-2 z-0 transform rotate-[-15deg]"></i>
+                </div>
+                <div class="bg-green-50 p-4 rounded-2xl border border-green-200 shadow-sm flex flex-col justify-center">
+                    <p class="text-green-800 text-[10px] font-bold uppercase mb-1">Entradas Pagas</p>
+                    <h3 id="fin-income" class="text-lg font-bold text-green-700 truncate">R$ 0,00</h3>
+                </div>
+                <div class="bg-red-50 p-4 rounded-2xl border border-red-200 shadow-sm flex flex-col justify-center">
+                    <p class="text-red-800 text-[10px] font-bold uppercase mb-1">Saídas Pagas</p>
+                    <h3 id="fin-expenses" class="text-lg font-bold text-red-700 truncate">R$ 0,00</h3>
+                </div>
+            </div>
+
+            <h3 class="font-bold text-slate-800 mb-4 text-sm flex items-center gap-2"><i data-lucide="alert-circle" class="w-4 h-4 text-orange-500"></i> Gestão de Pendências</h3>
+            
+            <div class="mb-5">
+                <h4 class="text-xs font-black text-green-700 uppercase tracking-wider mb-2 ml-1 flex items-center gap-1"><i data-lucide="arrow-down-to-line" class="w-3 h-3"></i> A Receber (Obras)</h4>
+                <div id="fin-receivables-list" class="flex flex-col gap-3"></div>
+            </div>
+
+            <div class="mb-8">
+                <h4 class="text-xs font-black text-red-700 uppercase tracking-wider mb-2 ml-1 flex items-center gap-1"><i data-lucide="arrow-up-from-line" class="w-3 h-3"></i> A Pagar (Despesas)</h4>
+                <div id="fin-payables-list" class="flex flex-col gap-3"></div>
+            </div>
+
+            <h3 class="font-bold text-slate-800 mb-3 text-sm flex items-center gap-2 pt-6 border-t border-slate-200"><i data-lucide="list" class="w-4 h-4 text-slate-500"></i> Extrato de Caixa</h3>
+            <div class="flex gap-2 mb-4 bg-white p-2 rounded-xl shadow-sm border border-slate-200">
+                <div class="flex-1">
+                    <label class="block text-[9px] font-bold text-slate-400 uppercase ml-1">De</label>
+                    <input type="date" id="fin-ext-start" class="w-full p-1.5 bg-transparent text-xs outline-none" onchange="renderFinance()">
+                </div>
+                <div class="w-px bg-slate-200 my-1"></div>
+                <div class="flex-1">
+                    <label class="block text-[9px] font-bold text-slate-400 uppercase ml-1">Até</label>
+                    <input type="date" id="fin-ext-end" class="w-full p-1.5 bg-transparent text-xs outline-none" onchange="renderFinance()">
+                </div>
+            </div>
+            <div id="fin-extrato-list" class="flex flex-col gap-3 pb-6"></div>
+        </div>
+
+        <div id="view-clients" class="hidden-section">
+            <div class="flex justify-between items-center mb-5">
+                <h2 class="text-xl font-bold text-slate-800">Clientes</h2>
+                <button onclick="openClientForm()" class="bg-indigo-700 active:bg-indigo-800 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-lg"><i data-lucide="plus"></i></button>
+            </div>
+            <div id="clients-list" class="flex flex-col gap-3"></div>
+        </div>
+
+        <!-- ==================== NOVA ABA RELATÓRIOS (ESTILO RV PORTAL) ==================== -->
+        <div id="view-reports" class="hidden-section">
+            <h2 class="text-xl font-bold text-slate-800 mb-5">Vendas por Período</h2>
+            
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 mb-6">
+                <div class="grid grid-cols-2 gap-3 mb-3">
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Data Inicial</label>
+                        <input type="date" id="rep-start" class="w-full p-2.5 border rounded-lg text-sm outline-none bg-slate-50" onchange="filtrarRelatorios()">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Data Final</label>
+                        <input type="date" id="rep-end" class="w-full p-2.5 border rounded-lg text-sm outline-none bg-slate-50" onchange="filtrarRelatorios()">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Cliente (Opcional)</label>
+                    <div class="flex gap-2 border rounded-lg bg-slate-50 p-2 focus-within:border-cyan-500 transition-colors">
+                        <i data-lucide="search" class="text-slate-400 w-5 h-5"></i>
+                        <input type="text" id="rep-client" placeholder="Digite o nome..." class="w-full bg-transparent outline-none text-sm" onkeyup="filtrarRelatorios()">
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-cyan-600 rounded-2xl p-5 shadow-lg text-white mb-6 flex justify-between items-center">
+                <div>
+                    <p class="text-[10px] font-bold text-cyan-200 uppercase tracking-wider">Total de Vendas</p>
+                    <h3 id="rep-total" class="text-2xl font-black mt-1">R$ 0,00</h3>
+                </div>
+                <div class="text-right">
+                    <i data-lucide="trending-up" class="w-8 h-8 opacity-50 mb-1 inline-block"></i>
+                    <p id="rep-count" class="text-xs font-medium text-cyan-100">0 obras</p>
+                </div>
+            </div>
+
+            <h3 class="font-bold text-slate-700 mb-3 text-sm">Detalhamento</h3>
+            <div id="rep-list" class="flex flex-col gap-3 pb-6"></div>
+        </div>
+
+    </main>
+
+    <nav class="fixed bottom-0 left-0 w-full bg-white border-t border-slate-200 flex justify-between items-center px-1 pt-2 pb-5 z-40 no-print shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.05)]">
+        <button onclick="navigate('dash')" id="nav-dash" class="nav-btn flex flex-col items-center flex-1 text-slate-400 transition-colors">
+            <i data-lucide="layout-dashboard" class="w-6 h-6 mb-1"></i>
+            <span class="text-[10px] font-semibold">Início</span>
+        </button>
+        <button onclick="navigate('obras')" id="nav-obras" class="nav-btn flex flex-col items-center flex-1 text-slate-400 transition-colors">
+            <i data-lucide="briefcase" class="w-6 h-6 mb-1"></i>
+            <span class="text-[10px] font-semibold">Obras</span>
+        </button>
+        <button onclick="navigate('fin')" id="nav-fin" class="nav-btn flex flex-col items-center flex-1 text-slate-400 transition-colors">
+            <i data-lucide="bar-chart-3" class="w-6 h-6 mb-1"></i>
+            <span class="text-[10px] font-semibold">Caixa</span>
+        </button>
+        <button onclick="navigate('clients')" id="nav-clients" class="nav-btn flex flex-col items-center flex-1 text-slate-400 transition-colors">
+            <i data-lucide="users" class="w-6 h-6 mb-1"></i>
+            <span class="text-[10px] font-semibold">Clientes</span>
+        </button>
+        <button onclick="navigate('reports')" id="nav-reports" class="nav-btn flex flex-col items-center flex-1 text-slate-400 transition-colors">
+            <i data-lucide="pie-chart" class="w-6 h-6 mb-1"></i>
+            <span class="text-[10px] font-semibold">Relatórios</span>
+        </button>
+    </nav>
+
+
+    <div id="obra-form-container" class="hidden fixed inset-0 bg-slate-900/60 z-[60] flex items-end sm:items-center justify-center backdrop-blur-sm p-0 sm:p-4">
+        <form onsubmit="saveObra(event)" class="bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col animate-[fadeIn_0.3s_ease-out]">
+            <div class="p-5 border-b flex justify-between items-center bg-slate-50 rounded-t-3xl sm:rounded-t-2xl">
+                <h3 class="font-bold text-lg text-slate-800 flex items-center gap-2"><i data-lucide="briefcase" class="text-cyan-600"></i> Ficha da Obra</h3>
+                <button type="button" onclick="document.getElementById('obra-form-container').classList.add('hidden')" class="bg-slate-200 text-slate-600 p-1.5 rounded-full"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="p-6 overflow-y-auto space-y-4 flex-1">
+                <input type="hidden" id="obr-id">
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-500 uppercase mb-1">Nome / Descrição</label>
+                    <input type="text" id="obr-name" required placeholder="Ex: Fechamento Sacada Apto 402" class="w-full p-3 border rounded-xl outline-none focus:border-cyan-500 bg-slate-50 text-sm">
+                </div>
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-500 uppercase mb-1">Cliente</label>
+                    <select id="obr-client" required class="w-full p-3 border rounded-xl outline-none focus:border-cyan-500 bg-slate-50 text-sm"></select>
+                </div>
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-500 uppercase mb-1">Valor Total (R$)</label>
+                    <input type="number" step="0.01" id="obr-value" required placeholder="0.00" class="w-full p-3 border rounded-xl outline-none focus:border-cyan-500 font-bold text-indigo-700 bg-slate-50 text-lg">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-500 uppercase mb-1">Início</label>
+                        <input type="date" id="obr-start" class="w-full p-3 border rounded-xl outline-none text-sm bg-slate-50">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-500 uppercase mb-1">Conclusão</label>
+                        <input type="date" id="obr-end" class="w-full p-3 border rounded-xl outline-none text-sm bg-slate-50">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-500 uppercase mb-1">Endereço da Obra</label>
+                    <textarea id="obr-address" rows="2" placeholder="Rua, Número, Bairro..." class="w-full p-3 border rounded-xl outline-none focus:border-cyan-500 bg-slate-50 resize-none text-sm"></textarea>
+                </div>
+            </div>
+            <div class="p-5 border-t bg-white pb-8 sm:pb-5">
+                <button type="submit" class="w-full p-4 bg-cyan-600 text-white rounded-xl font-bold active:bg-cyan-700 shadow-lg flex justify-center gap-2"><i data-lucide="save"></i> Salvar Obra</button>
+            </div>
+        </form>
+    </div>
+
+    <div id="client-form-container" class="hidden fixed inset-0 bg-slate-900/60 z-[60] flex items-end sm:items-center justify-center backdrop-blur-sm p-0 sm:p-4">
+        <form onsubmit="saveClient(event)" class="bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] flex flex-col animate-[fadeIn_0.3s_ease-out]">
+            <div class="p-5 border-b flex justify-between items-center bg-slate-50 rounded-t-3xl sm:rounded-t-2xl">
+                <h3 class="font-bold text-lg text-slate-800 flex items-center gap-2"><i data-lucide="user" class="text-indigo-600"></i> Dados do Cliente</h3>
+                <button type="button" onclick="document.getElementById('client-form-container').classList.add('hidden')" class="bg-slate-200 text-slate-600 p-1.5 rounded-full"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="p-6 overflow-y-auto space-y-4 flex-1">
+                <input type="hidden" id="cli-id">
+                <input type="text" id="cli-name" required placeholder="Nome do Cliente" class="w-full p-3 border rounded-xl outline-none focus:border-indigo-500 bg-slate-50">
+                <input type="tel" id="cli-phone" placeholder="Telefone / WhatsApp" class="w-full p-3 border rounded-xl outline-none focus:border-indigo-500 bg-slate-50">
+                <input type="text" id="cli-doc" placeholder="CPF/CNPJ" class="w-full p-3 border rounded-xl outline-none focus:border-indigo-500 bg-slate-50">
+                <input type="text" id="cli-addr" placeholder="Endereço" class="w-full p-3 border rounded-xl outline-none focus:border-indigo-500 bg-slate-50">
+            </div>
+            <div class="p-5 border-t bg-white pb-8 sm:pb-5">
+                <button type="submit" class="w-full p-4 bg-indigo-600 text-white rounded-xl font-bold active:bg-indigo-700 shadow-lg">Salvar Cliente</button>
+            </div>
+        </form>
+    </div>
+
+    <div id="modal-expense" class="hidden fixed inset-0 bg-slate-900/60 z-[60] flex items-end sm:items-center justify-center backdrop-blur-sm p-0 sm:p-4">
+        <div class="bg-white rounded-t-3xl sm:rounded-2xl w-full max-w-md shadow-2xl flex flex-col max-h-[90vh] animate-[fadeIn_0.3s_ease-out]">
+            <div class="p-5 border-b flex justify-between items-center bg-slate-50 rounded-t-3xl sm:rounded-t-2xl">
+                <h3 class="font-bold text-slate-800 text-lg flex items-center gap-2"><i data-lucide="minus-circle" class="text-red-500"></i> Registrar Saída</h3>
+                <button onclick="document.getElementById('modal-expense').classList.add('hidden')" class="bg-slate-200 text-slate-600 p-1.5 rounded-full"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="p-6 space-y-4 overflow-y-auto flex-1">
+                 <input type="hidden" id="exp-id"> 
+                 <div>
+                    <label class="block text-[11px] font-bold text-slate-500 uppercase mb-1">Fornecedor / Nome</label>
+                    <input type="text" id="exp-fornecedor" placeholder="Nome..." class="w-full p-3 border rounded-xl focus:border-red-500 outline-none bg-slate-50">
+                </div>
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-500 uppercase mb-1">Obra (Opcional)</label>
+                    <input type="text" id="exp-obra" placeholder="Qual obra..." class="w-full p-3 border rounded-xl focus:border-red-500 outline-none bg-slate-50">
+                </div>
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-500 uppercase mb-1">Valor (R$)</label>
+                    <input type="number" id="exp-cost" placeholder="0.00" class="w-full p-3 border rounded-xl font-bold text-red-600 focus:border-red-500 outline-none bg-slate-50 text-lg">
+                </div>
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-500 uppercase mb-1">Data</label>
+                    <input type="date" id="exp-date" class="w-full p-3 border rounded-xl focus:border-red-500 outline-none bg-slate-50">
+                </div>
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-500 uppercase mb-1">Observação</label>
+                    <input type="text" id="exp-note" placeholder="NF, Detalhes..." class="w-full p-3 border rounded-xl focus:border-red-500 outline-none bg-slate-50">
+                </div>
+            </div>
+            <div class="p-5 border-t bg-white pb-8 sm:pb-5">
+                <button onclick="saveExpense()" class="w-full p-4 bg-red-600 rounded-xl font-bold text-white active:bg-red-700 shadow-lg flex justify-center gap-2"><i data-lucide="save"></i> Salvar Pendente</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-receivable-edit" class="hidden fixed inset-0 bg-slate-900/60 z-[60] flex items-end sm:items-center justify-center backdrop-blur-sm p-0 sm:p-4">
+        <div class="bg-white rounded-t-3xl sm:rounded-2xl w-full max-w-md shadow-2xl flex flex-col max-h-[90vh] animate-[fadeIn_0.3s_ease-out]">
+            <div class="p-5 border-b flex justify-between items-center bg-slate-50 rounded-t-3xl sm:rounded-t-2xl">
+                <h3 class="font-bold text-slate-800 text-lg flex items-center gap-2"><i data-lucide="check-circle" class="text-green-600"></i> Baixar Recebimento</h3>
+                <button onclick="document.getElementById('modal-receivable-edit').classList.add('hidden')" class="bg-slate-200 text-slate-600 p-1.5 rounded-full"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="p-6 space-y-4 overflow-y-auto flex-1">
+                <input type="hidden" id="rec-uid">
+                <div class="flex justify-between items-center bg-slate-100 p-4 rounded-xl border border-slate-200">
+                    <div class="text-center">
+                        <span class="block text-[10px] uppercase font-bold text-slate-500 mb-1">Total Obra</span>
+                        <span id="rec-total-lbl" class="text-indigo-700 font-black text-sm"></span>
+                    </div>
+                    <div class="w-px h-8 bg-slate-300"></div>
+                    <div class="text-center">
+                        <span class="block text-[10px] uppercase font-bold text-slate-500 mb-1">Falta Pagar</span>
+                        <span id="rec-pending-lbl" class="text-red-600 font-black text-sm"></span>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-500 uppercase mb-1">Forma de Pagamento</label>
+                    <select id="rec-method" class="w-full p-3 border rounded-xl outline-none bg-slate-50"><option>PIX</option><option>Dinheiro</option><option>Transferência</option><option>Cartão Crédito</option><option>Cartão Débito</option><option>Boleto</option></select>
+                </div>
+                <div>
+                    <label class="block text-[11px] font-bold text-green-700 uppercase mb-1">Valor Recebido (R$)</label>
+                    <input type="number" id="rec-pay-val" placeholder="0.00" class="w-full p-4 border-2 border-green-200 rounded-xl font-black text-2xl focus:border-green-500 outline-none text-green-700 bg-green-50 text-center">
+                </div>
+            </div>
+            <div class="p-5 border-t bg-white pb-8 sm:pb-5">
+                <button onclick="saveReceivableEdit()" class="w-full p-4 bg-green-600 rounded-xl font-bold text-white active:bg-green-700 shadow-lg flex justify-center gap-2"><i data-lucide="check-circle"></i> Confirmar Baixa</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="print-area" class="print-only"></div>
+
+<script>
+        // ======= ESTADO E AUTENTICAÇÃO =======
+        let dadosUsuario = null;
+        const userSessao = localStorage.getItem('rv_user');
+
+        if (!userSessao) {
+            window.location.replace('index.html');
+        } else {
+            dadosUsuario = JSON.parse(userSessao);
+        }
+
+        const supabaseUrl = 'https://prfbidfbfwqihfhkcjgm.supabase.co'; 
+        const supabaseKey = 'sb_publishable__57dsH1GJxj4_jMo4hddfA_OgepVXRu';
+        const sb = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+        let STATE = { obras: [], clients: [], logs: [], expenses: [], users: [] };
+
+        function gerarUid() { return Math.floor(Date.now() * 100 + Math.random() * 100).toString(); }
+
+        window.onload = function() { 
+            if (dadosUsuario) { showLoading(true); loadData(); }
+        };
+
+        // ======= NAVEGAÇÃO MOBILE =======
+        function navigate(viewId) {
+            document.querySelectorAll('div[id^="view-"]').forEach(el => { el.classList.add('hidden-section'); el.classList.remove('active-section'); });
+            const target = document.getElementById('view-' + viewId);
+            if(target) { target.classList.remove('hidden-section'); target.classList.add('active-section'); }
+            
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('text-cyan-600');
+                btn.classList.add('text-slate-400');
+            });
+            const activeBtn = document.getElementById('nav-' + viewId);
+            if(activeBtn) {
+                activeBtn.classList.remove('text-slate-400');
+                activeBtn.classList.add('text-cyan-600');
+            }
+            
+            if(viewId === 'dash') renderDashboard();
+            if(viewId === 'obras') renderObras();
+            if(viewId === 'fin') renderFinance();
+            if(viewId === 'clients') renderClients();
+            if(viewId === 'reports') renderReports(); 
+            
+            lucide.createIcons();
+            window.scrollTo(0,0);
+        }
+
+        // ======= UTILITÁRIOS =======
+        function formatMoney(val) { return parseFloat(val || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
+        function formatDate(d) { try { if(!d) return '-'; const pt = d.split('-'); return pt.length===3 ? `${pt[2]}/${pt[1]}/${pt[0]}` : new Date(d).toLocaleDateString('pt-BR'); } catch(e) { return '-'; } }
+        function showLoading(show) { document.getElementById('loading').style.display = show ? 'flex' : 'none'; }
+        
+        function showToast(msg, isError) { 
+            const t = document.getElementById('toast'); 
+            t.textContent = msg; 
+            t.className = `fixed top-20 left-1/2 -translate-x-1/2 px-6 py-3 rounded-full shadow-2xl text-white font-bold z-[70] ${isError ? 'bg-red-500' : 'bg-slate-800'}`; 
+            t.style.display = 'block'; 
+            setTimeout(() => t.style.display = 'none', 4000); 
+        }
+
+        function getNextId(array) {
+            let max = 0;
+            array.forEach(item => { const val = parseInt(item.id); if(!isNaN(val) && val > max) max = val; });
+            return max + 1;
+        }
+
+        function toLocalYYYYMMDD(dateObj) {
+            const y = dateObj.getFullYear();
+            const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const d = String(dateObj.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        }
+
+        // ======= CARREGAMENTO DE DADOS =======
+        async function loadData() {
+            try {
+                const [resObras, resCli, resLog, resDesp] = await Promise.all([
+                    sb.from('obras').select('*').order('id', { ascending: false }),
+                    sb.from('clientes').select('*'),
+                    sb.from('logs').select('*'),
+                    sb.from('despesas').select('*')
+                ]);
+
+                STATE.obras = (resObras.data || []).map(o => ({
+                    id: o.id, name: o.nome, clientId: o.cliente_id, value: Number(o.valor),
+                    start: o.data_inicio, end: o.data_conclusao, address: o.endereco, status: o.status
+                }));
+
+                STATE.clients = (resCli.data || []).map(c => ({
+                    id: c.id, name: c.nome, phone: c.telefone, doc: c.documento, address: c.endereco
+                }));
+
+                STATE.logs = (resLog.data || []).map(l => ({
+                    uid: l.uid, id: l.id, type: l.tipo, date: l.data, 
+                    totalValue: Number(l.valor_total), paidValue: Number(l.valor_pago),
+                    clientName: l.cliente_nome, note: l.observacao, method: l.forma_pagamento, 
+                    finStatus: l.status_financeiro, status: l.status,
+                    refId: l.produto_nome || l.id
+                }));
+
+                STATE.expenses = (resDesp.data || []).map(e => ({
+                    id: e.id, fornecedor: e.fornecedor, obra: e.obra,
+                    cost: Number(e.custo), date: e.data, note: e.observacao, status: e.status || 'PENDENTE'
+                }));
+
+                updateClientSelects();
+                
+                if(!document.querySelector('.active-section')) {
+                    navigate('dash');
+                } else {
+                    const current = document.querySelector('.active-section').id.replace('view-','');
+                    navigate(current);
+                }
+                showLoading(false);
+            } catch (err) {
+                showLoading(false);
+                showToast("Erro fatal ao carregar dados. Veja o console.", true);
+                console.error("ERRO FATAL:", err);
+            }
+        }
+
+        function updateClientSelects() {
+            const opts = '<option value="">Selecione...</option>' + (STATE.clients || []).map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+            const clientSelect = document.getElementById('obr-client');
+            if(clientSelect) clientSelect.innerHTML = opts;
+        }
+
+        function fazerLogout() { localStorage.removeItem('rv_user'); window.location.replace('index.html'); }
+
+
+        // ======= ABA 1: VISÃO GERAL (DASHBOARD) =======
+        function renderDashboard() {
+            const grid = document.getElementById('dash-grid');
+            if(!grid) return;
+
+            const ativas = STATE.obras.filter(o => o.status !== 'CANCELADA');
+
+            if(ativas.length === 0) {
+                grid.innerHTML = `<div class="text-center text-slate-400 p-10 text-sm border-2 border-dashed border-slate-200 rounded-2xl">Nenhuma obra em andamento.</div>`;
+                return;
+            }
+
+            grid.innerHTML = ativas.map(o => {
+                const cliName = STATE.clients.find(c => String(c.id) === String(o.clientId))?.name || 'Cliente';
+                return `
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden relative">
+                    <div class="p-4 border-b border-slate-100 bg-slate-50 flex justify-between items-start">
+                        <div class="pr-2">
+                            <span class="bg-cyan-100 text-cyan-800 text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-wider mb-1 inline-block">#${o.id}</span>
+                            <h3 class="font-bold text-slate-800 text-base leading-tight mt-1">${o.name}</h3>
+                            <p class="text-[11px] text-slate-500 mt-1 flex items-center gap-1"><i data-lucide="user" class="w-3 h-3"></i> ${cliName}</p>
+                        </div>
+                    </div>
+                    <div class="p-4 flex flex-col gap-2 bg-white">
+                        <div class="flex justify-between items-center">
+                            <span class="text-[11px] text-slate-400 font-bold uppercase">Valor</span>
+                            <span class="font-black text-slate-800 text-sm">${formatMoney(o.value)}</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-[11px] text-slate-400 font-bold uppercase">Previsão</span>
+                            <span class="font-bold text-cyan-600 text-sm">${formatDate(o.end)}</span>
+                        </div>
+                    </div>
+                    <div class="p-3 border-t border-slate-100 bg-slate-50 flex justify-end">
+                        <button onclick="printObra('${o.id}')" class="text-[11px] font-bold text-slate-500 hover:text-cyan-600 flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white border border-slate-200 shadow-sm active:bg-slate-100"><i data-lucide="printer" class="w-4 h-4"></i> Imprimir</button>
+                    </div>
+                </div>`;
+            }).join('');
+            lucide.createIcons();
+        }
+
+        // ======= ABA 2: OBRAS =======
+        function renderObras() {
+            const list = document.getElementById('obras-list');
+            if(!list) return;
+
+            const term = document.getElementById('obra-search')?.value.toLowerCase() || '';
+            let filtered = STATE.obras.slice();
+
+            if (term) {
+                filtered = filtered.filter(o => {
+                    const cliName = STATE.clients.find(c => String(c.id) === String(o.clientId))?.name || '';
+                    return o.name.toLowerCase().includes(term) || cliName.toLowerCase().includes(term);
+                });
+            }
+
+            if(filtered.length === 0) {
+                list.innerHTML = '<div class="text-center text-slate-400 p-8 text-sm">Nenhuma obra encontrada.</div>';
+                return;
+            }
+
+            list.innerHTML = filtered.map(o => {
+                const cliName = STATE.clients.find(c => String(c.id) === String(o.clientId))?.name || 'Cliente';
+                return `
+                <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col gap-2 relative">
+                    <div class="flex justify-between items-start">
+                        <div class="pr-8">
+                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">OBRA #${o.id}</span>
+                            <h3 class="font-bold text-slate-800 text-sm leading-tight mt-0.5">${o.name}</h3>
+                            <p class="text-[11px] text-slate-500 mt-1 truncate"><i data-lucide="user" class="w-3 h-3 inline"></i> ${cliName}</p>
+                        </div>
+                        <button onclick="openObraForm('${o.id}')" class="absolute top-4 right-4 p-2 bg-slate-50 border border-slate-200 text-slate-600 rounded-full active:bg-slate-200"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
+                    </div>
+                    <div class="flex justify-between items-center mt-2 pt-3 border-t border-slate-100">
+                        <span class="font-black text-indigo-700 text-sm">${formatMoney(o.value)}</span>
+                        <span class="text-[10px] text-slate-500 font-medium">Até ${formatDate(o.end)}</span>
+                    </div>
+                </div>`;
+            }).join('');
+            lucide.createIcons();
+        }
+
+        function openObraForm(id) {
+            document.getElementById('obra-form-container').classList.remove('hidden');
+            if(id) {
+                const o = STATE.obras.find(x => String(x.id) === String(id));
+                if(o) {
+                    document.getElementById('obr-id').value = o.id;
+                    document.getElementById('obr-name').value = o.name;
+                    document.getElementById('obr-client').value = o.clientId;
+                    document.getElementById('obr-value').value = o.value;
+                    document.getElementById('obr-start').value = o.start || '';
+                    document.getElementById('obr-end').value = o.end || '';
+                    document.getElementById('obr-address').value = o.address || '';
+                }
+            } else {
+                document.getElementById('obr-id').value = '';
+                document.getElementById('obr-name').value = '';
+                document.getElementById('obr-client').value = '';
+                document.getElementById('obr-value').value = '';
+                document.getElementById('obr-start').value = '';
+                document.getElementById('obr-end').value = '';
+                document.getElementById('obr-address').value = '';
+            }
+        }
+
+        async function saveObra(e) {
+            e.preventDefault();
+            showLoading(true);
+
+            const idVal = document.getElementById('obr-id').value;
+            const isNew = !idVal;
+            const newId = isNew ? getNextId(STATE.obras) : idVal;
+
+            const cliId = document.getElementById('obr-client').value;
+            const cliName = STATE.clients.find(c => String(c.id) === String(cliId))?.name || 'Cliente';
+            const valorTotal = Number(parseFloat(document.getElementById('obr-value').value).toFixed(2));
+            const obrName = document.getElementById('obr-name').value;
+
+            const payloadObra = {
+                id: newId,
+                nome: obrName,
+                cliente_id: cliId,
+                valor: valorTotal,
+                data_inicio: document.getElementById('obr-start').value || null,
+                data_conclusao: document.getElementById('obr-end').value || null,
+                endereco: document.getElementById('obr-address').value
+            };
+
+            try {
+                const { error: errObra } = await sb.from('obras').upsert(payloadObra);
+                if(errObra) throw errObra;
+
+                if(isNew) {
+                    const logPayload = {
+                        id: getNextId(STATE.logs), 
+                        tipo: 'receita_obra',
+                        produto_nome: String(newId), 
+                        quantidade: null, 
+                        data: new Date().toISOString(), 
+                        observacao: obrName,
+                        valor_total: valorTotal,
+                        cliente_nome: cliName, 
+                        forma_pagamento: null,
+                        status: 'ATIVO',
+                        status_financeiro: 'A RECEBER', 
+                        valor_pago: 0, 
+                        uid: gerarUid()
+                    };
+                    const { error: errLog } = await sb.from('logs').insert([logPayload]);
+                    if(errLog) throw errLog;
+                } else {
+                    const masterLog = STATE.logs.find(l => String(l.refId) === String(newId) && l.type === 'receita_obra');
+                    if(masterLog) {
+                        let novoStatus = masterLog.finStatus;
+                        if(masterLog.paidValue >= valorTotal) novoStatus = 'PAGO';
+                        else if(masterLog.paidValue > 0) novoStatus = 'PARCIAL';
+                        else novoStatus = 'A RECEBER';
+
+                        await sb.from('logs').update({
+                            valor_total: valorTotal,
+                            observacao: obrName,
+                            cliente_nome: cliName,
+                            status_financeiro: novoStatus
+                        }).eq('uid', masterLog.uid);
+                    }
+                }
+
+                document.getElementById('obra-form-container').classList.add('hidden');
+                showToast("Obra salva!");
+                await loadData();
+            } catch (err) {
+                showLoading(false);
+                showToast("Erro: " + err.message, true);
+                console.error(err);
+            }
+        }
+
+        // ======= ABA 3: FINANCEIRO =======
+        function renderFinance() {
+            const contasReceber = STATE.logs.filter(l => l.type === 'receita_obra' && l.status !== 'CANCELADO');
+            let totalRecebido = 0;
+            let totalSaidas = STATE.expenses.filter(e => e.status === 'PAGO').reduce((a, b) => a + Number(b.cost), 0);
+
+            const recBody = document.getElementById('fin-receivables-list');
+            const payBody = document.getElementById('fin-payables-list');
+            const extBody = document.getElementById('fin-extrato-list');
+
+            let recHtml = '';
+            contasReceber.forEach(r => {
+                totalRecebido += r.paidValue;
+                const falta = r.totalValue - r.paidValue;
+                if(falta > 0) {
+                    recHtml += `
+                    <div class="bg-white p-3 rounded-2xl shadow-sm border border-slate-200 flex justify-between items-center border-l-4 border-l-green-500 relative">
+                        <div class="flex-1 pr-2">
+                            <span class="text-[10px] font-bold text-slate-400 uppercase">Obra #${r.refId}</span>
+                            <h4 class="font-bold text-slate-700 text-sm leading-tight">${r.clientName}</h4>
+                            <p class="text-[10px] text-red-600 font-bold mt-1">Falta: ${formatMoney(falta)}</p>
+                        </div>
+                        <button onclick="openBaixaReceita('${r.uid}', ${r.totalValue}, ${r.paidValue})" class="bg-green-100 text-green-700 hover:bg-green-200 active:bg-green-300 text-[10px] font-bold py-2 px-3 rounded-xl flex items-center gap-1"><i data-lucide="check" class="w-3 h-3"></i> Baixar</button>
+                    </div>`;
+                }
+            });
+            recBody.innerHTML = recHtml || `<div class="text-center text-slate-400 text-xs py-3 bg-slate-100 rounded-xl border border-dashed border-slate-300">Não há contas a receber.</div>`;
+
+            let payHtml = '';
+            STATE.expenses.filter(e => e.status !== 'PAGO').forEach(e => {
+                payHtml += `
+                <div class="bg-white p-3 rounded-2xl shadow-sm border border-slate-200 flex justify-between items-center border-l-4 border-l-red-500 relative">
+                    <div class="flex-1 pr-2">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase">${formatDate(e.date)}</span>
+                        <h4 class="font-bold text-slate-700 text-sm leading-tight">${e.fornecedor || 'Despesa'}</h4>
+                        <p class="text-[10px] text-red-600 font-bold mt-1">Pagar: ${formatMoney(e.cost)}</p>
+                    </div>
+                    <div class="flex gap-1.5 items-center">
+                        <button onclick="openEditExpense('${e.id}')" class="p-2 bg-slate-100 text-slate-600 rounded-lg active:bg-slate-200"><i data-lucide="edit-3" class="w-3 h-3"></i></button>
+                        <button onclick="payExpense('${e.id}')" class="bg-red-100 text-red-700 active:bg-red-200 text-[10px] font-bold py-2 px-3 rounded-xl flex items-center gap-1"><i data-lucide="check" class="w-3 h-3"></i> Pagar</button>
+                    </div>
+                </div>`;
+            });
+            payBody.innerHTML = payHtml || `<div class="text-center text-slate-400 text-xs py-3 bg-slate-100 rounded-xl border border-dashed border-slate-300">Não há contas a pagar.</div>`;
+
+            document.getElementById('fin-income').innerText = formatMoney(totalRecebido);
+            document.getElementById('fin-expenses').innerText = formatMoney(totalSaidas);
+            document.getElementById('fin-balance').innerText = formatMoney(totalRecebido - totalSaidas);
+
+            let extrato = [];
+            STATE.logs.filter(l => l.type === 'recebimento' && l.status !== 'CANCELADO').forEach(l => {
+                extrato.push({ type: 'in', date: l.date, title: l.note || 'Recebimento', desc: l.method || '-', val: l.totalValue, id: l.uid });
+            });
+            STATE.expenses.filter(e => e.status === 'PAGO').forEach(e => {
+                extrato.push({ type: 'out', date: e.date, title: e.fornecedor || 'Despesa', desc: e.obra ? 'Obra: ' + e.obra : 'Geral', val: e.cost, id: e.id });
+            });
+
+            const startDate = document.getElementById('fin-ext-start')?.value;
+            const endDate = document.getElementById('fin-ext-end')?.value;
+            if(startDate) extrato = extrato.filter(i => new Date(i.date) >= new Date(startDate));
+            if(endDate) { let endD = new Date(endDate); endD.setHours(23,59,59); extrato = extrato.filter(i => new Date(i.date) <= endD); }
+            
+            extrato.sort((a,b) => new Date(b.date) - new Date(a.date));
+
+            extBody.innerHTML = extrato.length ? extrato.map(i => `
+                <div class="bg-white p-3 rounded-2xl shadow-sm border border-slate-200 flex justify-between items-center">
+                    <div class="flex-1 pr-2">
+                        <span class="text-[9px] text-slate-400 font-bold uppercase tracking-wider">${formatDate(i.date)}</span>
+                        <h4 class="text-xs font-bold text-slate-700 leading-tight">${i.title}</h4>
+                        <p class="text-[10px] text-slate-500 truncate mt-0.5">${i.desc}</p>
+                    </div>
+                    <div class="flex flex-col items-end gap-1.5">
+                        <span class="font-black text-sm ${i.type === 'in' ? 'text-green-600' : 'text-red-600'}">${i.type === 'in' ? '+' : '-'} ${formatMoney(i.val)}</span>
+                        <button onclick="${i.type === 'in' ? `estornarRecebimento('${i.id}')` : `estornarDespesa('${i.id}')`}" class="text-[9px] font-bold text-slate-400 uppercase bg-slate-50 border border-slate-200 py-1 px-2 rounded active:bg-red-50 active:text-red-500">Estornar</button>
+                    </div>
+                </div>
+            `).join('') : `<div class="text-center text-slate-400 text-xs py-4">Nenhuma movimentação no período.</div>`;
+
+            lucide.createIcons();
+        }
+
+        function openBaixaReceita(masterUid, total, paid) {
+            document.getElementById('rec-uid').value = masterUid;
+            document.getElementById('rec-total-lbl').innerText = formatMoney(total);
+            document.getElementById('rec-pending-lbl').innerText = formatMoney(total - paid);
+            document.getElementById('rec-pay-val').value = '';
+            document.getElementById('modal-receivable-edit').classList.remove('hidden');
+        }
+
+        async function saveReceivableEdit() {
+            const masterUid = document.getElementById('rec-uid').value;
+            const method = document.getElementById('rec-method').value;
+            const payVal = Number(document.getElementById('rec-pay-val').value) || 0;
+            
+            if(payVal <= 0) return showToast("Insira um valor maior que zero", true);
+            showLoading(true);
+
+            const masterLog = STATE.logs.find(l => String(l.uid) === String(masterUid));
+            if(!masterLog) { showLoading(false); return showToast("Conta não encontrada", true); }
+
+            let newPaid = masterLog.paidValue + payVal;
+            let finStatus = newPaid >= masterLog.totalValue ? 'PAGO' : 'PARCIAL';
+
+            try {
+                const { error: errUpdate } = await sb.from('logs').update({ 
+                    valor_pago: Number(newPaid.toFixed(2)), 
+                    status_financeiro: finStatus 
+                }).eq('uid', masterUid);
+                
+                if (errUpdate) throw errUpdate;
+                
+                const novoLog = {
+                    id: getNextId(STATE.logs), 
+                    tipo: 'recebimento',
+                    produto_nome: String(masterLog.refId), 
+                    quantidade: null,
+                    data: new Date().toISOString(), 
+                    observacao: 'Baixa Obra #' + masterLog.refId, 
+                    valor_total: Number(payVal.toFixed(2)),
+                    cliente_nome: masterLog.clientName || 'Cliente', 
+                    forma_pagamento: method, 
+                    status: 'ATIVO', 
+                    status_financeiro: 'PAGO',
+                    valor_pago: Number(payVal.toFixed(2)),
+                    uid: gerarUid()
+                };
+
+                const { error: errInsert } = await sb.from('logs').insert([novoLog]);
+                if (errInsert) throw errInsert; 
+
+                document.getElementById('modal-receivable-edit').classList.add('hidden');
+                showToast("Baixa registrada!");
+                await loadData();
+            } catch(err) {
+                showLoading(false);
+                showToast("ERRO: " + err.message, true);
+                console.error("Erro:", err);
+            }
+        }
+
+        async function estornarRecebimento(uidLogRecebimento) {
+            if(!confirm("Estornar recebimento e voltar valor para 'A Receber'?")) return;
+            showLoading(true);
+
+            try {
+                const recLog = STATE.logs.find(l => l.uid === uidLogRecebimento);
+                if(!recLog) throw new Error("Log não encontrado");
+
+                const parentId = recLog.refId; 
+                const valorEstorno = recLog.totalValue;
+
+                await sb.from('logs').update({ status: 'CANCELADO' }).eq('uid', uidLogRecebimento);
+
+                const masterLog = STATE.logs.find(l => String(l.refId) === String(parentId) && l.type === 'receita_obra');
+                if(masterLog) {
+                    let novoPago = Math.max(0, masterLog.paidValue - valorEstorno);
+                    let novoStatus = novoPago === 0 ? 'A RECEBER' : (novoPago < masterLog.totalValue ? 'PARCIAL' : 'PAGO');
+                    await sb.from('logs').update({ valor_pago: novoPago, status_financeiro: novoStatus }).eq('uid', masterLog.uid);
+                }
+
+                showToast("Estorno concluído!");
+                await loadData();
+            } catch (err) {
+                showLoading(false);
+                showToast("Erro: " + err.message, true);
+            }
+        }
+
+        async function saveExpense() {
+            const idVal = document.getElementById('exp-id').value;
+            const isNew = !idVal;
+            
+            const fornecedor = document.getElementById('exp-fornecedor').value;
+            const cost = document.getElementById('exp-cost').value;
+            if(!fornecedor || !cost) return showToast("Preencha Fornecedor e Valor", true);
+            showLoading(true);
+
+            const payload = {
+                fornecedor: fornecedor, obra: document.getElementById('exp-obra').value,
+                custo: Number(parseFloat(cost).toFixed(2)), 
+                data: document.getElementById('exp-date').value || new Date().toISOString(), 
+                observacao: document.getElementById('exp-note').value, status: 'PENDENTE'
+            };
+
+            if (isNew) {
+                payload.id = getNextId(STATE.expenses);
+                await sb.from('despesas').insert([payload]);
+            } else {
+                await sb.from('despesas').update(payload).eq('id', idVal);
+            }
+
+            document.getElementById('modal-expense').classList.add('hidden');
+            showToast("Despesa Salva!");
+            loadData();
+        }
+
+        function openEditExpense(id) {
+            const exp = STATE.expenses.find(e => String(e.id) === String(id));
+            if(!exp) return;
+            document.getElementById('exp-id').value = exp.id;
+            document.getElementById('exp-fornecedor').value = exp.fornecedor || '';
+            document.getElementById('exp-obra').value = exp.obra || '';
+            document.getElementById('exp-cost').value = exp.cost;
+            try { document.getElementById('exp-date').value = exp.date.split('T')[0]; } catch(e){}
+            document.getElementById('exp-note').value = exp.note || '';
+            document.getElementById('modal-expense').classList.remove('hidden');
+        }
+
+        async function payExpense(id) {
+            if(!confirm("Dar baixa nesta despesa? (Sairá do saldo de Caixa)")) return;
+            showLoading(true);
+            
+            const exp = STATE.expenses.find(e => String(e.id) === String(id));
+            await sb.from('despesas').update({ status: 'PAGO' }).eq('id', id);
+            
+            const descProduto = exp.fornecedor + (exp.obra ? ` (Obra: ${exp.obra})` : '');
+            await sb.from('logs').insert([{
+                id: getNextId(STATE.logs), 
+                uid: gerarUid(), 
+                tipo: 'despesa', 
+                produto_nome: String(exp.id), 
+                data: new Date().toISOString(), 
+                observacao: exp.note || descProduto, 
+                valor_total: Number(exp.cost.toFixed(2)), 
+                status: 'ATIVO'
+            }]);
+            
+            showToast("Baixa registrada!");
+            loadData();
+        }
+
+        async function estornarDespesa(idDespesa) {
+            if(!confirm("Estornar para Pendente?")) return;
+            showLoading(true);
+
+            try {
+                await sb.from('despesas').update({ status: 'PENDENTE' }).eq('id', idDespesa);
+                const logParaEstornar = STATE.logs.find(l => l.type === 'despesa' && String(l.refId) === String(idDespesa));
+                if (logParaEstornar) {
+                    await sb.from('logs').update({ status: 'CANCELADO' }).eq('uid', logParaEstornar.uid);
+                }
+                showToast("Estornado!");
+                loadData();
+            } catch(err) {
+                showLoading(false);
+                showToast("Erro: " + err.message, true);
+            }
+        }
+
+        // ======= ABA 4: CLIENTES =======
+        async function saveClient(e) {
+            e.preventDefault();
+            showLoading(true);
+            const idVal = document.getElementById('cli-id').value;
+            const payload = {
+                id: idVal ? idVal : getNextId(STATE.clients), nome: document.getElementById('cli-name').value, 
+                telefone: document.getElementById('cli-phone').value, documento: document.getElementById('cli-doc').value, 
+                endereco: document.getElementById('cli-addr').value
+            };
+            await sb.from('clientes').upsert(payload);
+            document.getElementById('client-form-container').classList.add('hidden');
+            showToast("Cliente Salvo!");
+            loadData();
+        }
+
+        function renderClients() {
+            const list = document.getElementById('clients-list');
+            if(!list) return;
+
+            if (!STATE.clients || STATE.clients.length === 0) {
+                list.innerHTML = '<div class="text-center text-slate-400 p-8 text-sm border-2 border-dashed border-slate-200 rounded-2xl">Nenhum cliente cadastrado ainda.</div>';
+                return;
+            }
+
+            list.innerHTML = STATE.clients.map(c => {
+                const num = (c.phone || '').replace(/\D/g, '');
+                const btnWapp = num ? `<a href="https://wa.me/55${num}" target="_blank" class="w-10 h-10 bg-green-100 text-green-600 rounded-full flex items-center justify-center active:bg-green-200"><i data-lucide="message-circle" class="w-5 h-5"></i></a>` : '';
+                
+                return `
+                <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex justify-between items-center relative">
+                    <div class="flex-1 pr-4">
+                        <h3 class="font-bold text-slate-800 text-sm">${c.name || 'Sem Nome'}</h3>
+                        <p class="text-[11px] text-slate-500 mt-1 flex flex-col gap-0.5">
+                            <span><i data-lucide="phone" class="w-3 h-3 inline"></i> ${c.phone || '-'}</span>
+                            <span><i data-lucide="file-text" class="w-3 h-3 inline"></i> ${c.doc || '-'}</span>
+                        </p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        ${btnWapp}
+                        <button onclick="openClientForm('${c.id}')" class="w-10 h-10 bg-slate-50 border border-slate-200 text-slate-600 rounded-full flex items-center justify-center active:bg-slate-200"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
+                    </div>
+                </div>`;
+            }).join('');
+            lucide.createIcons();
+        }
+
+        function openClientForm(id) { 
+            document.getElementById('client-form-container').classList.remove('hidden'); 
+            if(id) {
+                const c = STATE.clients.find(x => String(x.id) === String(id));
+                if(c) { document.getElementById('cli-id').value=c.id; document.getElementById('cli-name').value=c.name; document.getElementById('cli-phone').value=c.phone; document.getElementById('cli-doc').value=c.doc; document.getElementById('cli-addr').value=c.address; }
+            } else { document.getElementById('cli-id').value=''; document.getElementById('cli-name').value=''; document.getElementById('cli-phone').value=''; document.getElementById('cli-doc').value=''; document.getElementById('cli-addr').value=''; }
+        }
+
+        // ======= ABA 5: RELATÓRIOS (NOVO - ESTILO RV PORTAL) =======
+        function renderReports() {
+            const startInput = document.getElementById('rep-start');
+            const endInput = document.getElementById('rep-end');
+            
+            if(!startInput.value || !endInput.value) {
+                const date = new Date();
+                const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
+                const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+                
+                startInput.value = toLocalYYYYMMDD(firstDay);
+                endInput.value = toLocalYYYYMMDD(lastDay);
+            }
+            
+            filtrarRelatorios();
+        }
+
+        function filtrarRelatorios() {
+            const start = document.getElementById('rep-start').value;
+            const end = document.getElementById('rep-end').value;
+            const clientName = document.getElementById('rep-client').value.toLowerCase();
+            
+            let vendas = STATE.logs.filter(l => l.type === 'receita_obra' && l.status !== 'CANCELADO');
+            
+            if(start) vendas = vendas.filter(v => new Date(v.date.split('T')[0]) >= new Date(start));
+            if(end) vendas = vendas.filter(v => new Date(v.date.split('T')[0]) <= new Date(end));
+            if(clientName) vendas = vendas.filter(v => (v.clientName || '').toLowerCase().includes(clientName));
+            
+            vendas.sort((a,b) => new Date(b.date) - new Date(a.date));
+
+            const total = vendas.reduce((acc, curr) => acc + curr.totalValue, 0);
+            document.getElementById('rep-total').innerText = formatMoney(total);
+            document.getElementById('rep-count').innerText = vendas.length + (vendas.length === 1 ? " obra" : " obras");
+            
+            const list = document.getElementById('rep-list');
+            list.innerHTML = vendas.map(v => `
+                <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex justify-between items-center">
+                    <div class="flex-1 pr-3">
+                        <span class="text-[10px] font-bold text-cyan-400 uppercase tracking-wider">${formatDate(v.date)}</span>
+                        <h4 class="font-bold text-slate-800 text-sm mt-0.5 leading-tight">${v.clientName || 'Cliente'}</h4>
+                        <p class="text-[11px] text-slate-500 mt-1 truncate">${v.note || 'Obra #' + v.refId}</p>
+                    </div>
+                    <div class="font-black text-cyan-700 text-sm">${formatMoney(v.totalValue)}</div>
+                </div>
+            `).join('') || '<div class="text-center text-slate-400 text-sm py-6 bg-white rounded-2xl border border-slate-200 border-dashed">Nenhuma venda encontrada no período.</div>';
+        }
+
+        // ======= IMPRESSÃO =======
+        function printObra(id) {
+            const obra = STATE.obras.find(o => String(o.id) === String(id));
+            if(!obra) return;
+            const cli = STATE.clients.find(c => String(c.id) === String(obra.clientId)) || { name: 'Não Cadastrado', phone: '-', doc: '-', address: '-' };
+
+            const el = document.getElementById('print-area');
+            el.innerHTML = `
+            <div class="invoice-box-orig">
+                <div class="header-orig">
+                    <div class="logo-box-orig">
+                        <img src="logo.png" style="max-height: 80px; max-width: 100%;" alt="Logo" onerror="this.style.display='none'"/>
+                    </div>
+                    <div class="company-box-orig">
+                        <h2 style="margin: 0; font-size: 18px; font-weight: bold; color: #0891b2;">RV VIDROS</h2>
+                        <p style="margin: 2px 0;">CNPJ: 30.942.123/0001-02</p>
+                        <p style="margin: 2px 0;">Rua Mineiros, 532 | Jataí - GO | (64) 3636-4861</p>
+                    </div>
+                    <div class="info-box-orig">
+                        <h3 style="margin: 0; font-size: 14px; font-weight: bold;">FICHA DE OBRA</h3>
+                        <p style="margin: 5px 0; font-weight: bold; font-size: 16px;">OBRA Nº ${obra.id}</p>
+                        <p style="margin: 5px 0;">Emissão: ${new Date().toLocaleDateString()}</p>
+                    </div>
+                </div>
+                <div class="section-title-orig">1. IDENTIFICAÇÃO DO CLIENTE</div>
+                <div class="content-box">
+                    <div class="grid-info">
+                        <div><div class="info-label">Nome do Cliente</div><div class="info-value">${cli.name}</div></div>
+                        <div><div class="info-label">Telefone</div><div class="info-value">${cli.phone || '-'}</div></div>
+                        <div><div class="info-label">Documento (CPF/CNPJ)</div><div class="info-value">${cli.doc || '-'}</div></div>
+                    </div>
+                </div>
+                <div class="section-title-orig">2. DADOS DA OBRA E SERVIÇO</div>
+                <div class="content-box">
+                    <div class="grid-info">
+                        <div style="grid-column: span 2;"><div class="info-label">Nome / Descrição do Projeto</div><div class="info-value">${obra.name}</div></div>
+                        <div style="grid-column: span 2;"><div class="info-label">Endereço de Execução</div><div class="info-value">${obra.address || cli.address || 'Não informado'}</div></div>
+                        <div><div class="info-label">Data de Início</div><div class="info-value">${formatDate(obra.start)}</div></div>
+                        <div><div class="info-label">Previsão de Conclusão</div><div class="info-value">${formatDate(obra.end)}</div></div>
+                    </div>
+                </div>
+                <div class="section-title-orig">3. FECHAMENTO COMERCIAL</div>
+                <div class="content-box">
+                    <div class="grid-info">
+                        <div style="grid-column: span 2;"><div class="info-label">Valor Total do Projeto</div><div class="info-value" style="font-size: 18px; color: #0f172a;">${formatMoney(obra.value)}</div></div>
+                    </div>
+                    <p style="font-size: 11px; color: #64748b; margin-top: 20px;">* Esta ficha de obra é um documento de registro interno.</p>
+                </div>
+                <div class="signature-area">
+                    <div class="signature-line">ASSINATURA DO CLIENTE<br><span style="font-weight: normal; font-size: 9px;">Concordo com os dados e prazos</span></div>
+                    <div class="signature-line">RESPONSÁVEL TÉCNICO<br><span style="font-weight: normal; font-size: 9px;">RV VIDROS</span></div>
+                </div>
+            </div>`;
+            setTimeout(() => window.print(), 500);
+        }
+</script>
+</body>
+</html>
