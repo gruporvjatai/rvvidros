@@ -996,7 +996,7 @@
         
 
 
-// ======= ABA 5: RELATÓRIOS (ADAPTADO PARA OBRAS) =======
+// ======= ABA 5: RELATÓRIOS (CORRIGIDO - FUNCIONA COM OBRAS) =======
 function renderReports() {
     lucide.createIcons();
 }
@@ -1010,18 +1010,24 @@ function showDailyReport() {
     
     let totalObras = 0;
     let totalValor = 0;
+    let totalRecebido = 0;
     let rowsHtml = '';
     
     // Busca obras criadas hoje (pela data do log 'receita_obra')
     const obrasHoje = STATE.logs.filter(l => {
         if (l.type !== 'receita_obra' || l.status === 'CANCELADO') return false;
         if (!l.date) return false;
+        
+        // CORREÇÃO: Extrai apenas a data (YYYY-MM-DD) do timestamp
         const dataLog = l.date.split('T')[0];
         return dataLog === hojeStr;
     });
 
+    console.log('Obras hoje:', obrasHoje.length, 'Data hoje:', hojeStr);
+
     obrasHoje.forEach(v => {
         totalValor += v.totalValue;
+        totalRecebido += (v.paidValue || 0);
         totalObras++;
         
         // Status de pagamento
@@ -1045,7 +1051,10 @@ function showDailyReport() {
                     <span class="text-[10px] text-slate-500">${v.clientName || 'Cliente'}</span>
                     <span class="text-[10px] text-slate-400">${v.note || ''}</span>
                 </div>
-                ${falta > 0 ? `<div class="text-[10px] text-red-500 font-bold mt-1">Falta receber: ${formatMoney(falta)}</div>` : ''}
+                <div class="flex justify-between items-center mt-1 pt-1 border-t border-slate-100">
+                    <span class="text-[10px] text-slate-500">Recebido: ${formatMoney(pago)}</span>
+                    ${falta > 0 ? `<span class="text-[10px] text-red-500 font-bold">Falta: ${formatMoney(falta)}</span>` : ''}
+                </div>
             </div>
         `;
     });
@@ -1071,9 +1080,17 @@ function showDailyReport() {
                     <span class="text-sm">Qtd. Obras:</span>
                     <span class="text-sm font-bold">${totalObras}</span>
                 </div>
+                <div class="flex justify-between items-center mb-1">
+                    <span class="text-sm">Total Vendido:</span>
+                    <span class="text-sm font-bold text-cyan-400">${formatMoney(totalValor)}</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-sm">Total Recebido:</span>
+                    <span class="text-sm font-bold text-green-400">${formatMoney(totalRecebido)}</span>
+                </div>
                 <div class="flex justify-between items-center mt-3 pt-3 border-t border-slate-700">
-                    <span class="font-black text-lg">TOTAL VENDIDO:</span>
-                    <span class="font-black text-2xl text-cyan-400">${formatMoney(totalValor)}</span>
+                    <span class="font-black text-lg">A RECEBER:</span>
+                    <span class="font-black text-xl ${(totalValor - totalRecebido) > 0 ? 'text-orange-400' : 'text-green-400'}">${formatMoney(totalValor - totalRecebido)}</span>
                 </div>
             </div>
         </div>
@@ -1112,12 +1129,30 @@ function showPeriodReport() {
     const end = document.getElementById('rep-per-end').value;
     const client = document.getElementById('rep-per-client').value.toLowerCase().trim();
 
+    console.log('Filtros - Início:', start, 'Fim:', end, 'Cliente:', client);
+    console.log('Total de logs receita_obra:', STATE.logs.filter(l => l.type === 'receita_obra').length);
+
     // Filtra obras pela data de criação (log 'receita_obra')
     let filteredObras = STATE.logs.filter(l => l.type === 'receita_obra' && l.status !== 'CANCELADO');
 
-    if (start) filteredObras = filteredObras.filter(v => v.date.split('T')[0] >= start);
-    if (end) filteredObras = filteredObras.filter(v => v.date.split('T')[0] <= end);
-    if (client) filteredObras = filteredObras.filter(v => (v.clientName || '').toLowerCase().includes(client));
+    // CORREÇÃO: Extrai apenas a data (YYYY-MM-DD) para comparação
+    if (start) {
+        filteredObras = filteredObras.filter(v => {
+            const dataLog = v.date.split('T')[0];
+            return dataLog >= start;
+        });
+    }
+    if (end) {
+        filteredObras = filteredObras.filter(v => {
+            const dataLog = v.date.split('T')[0];
+            return dataLog <= end;
+        });
+    }
+    if (client) {
+        filteredObras = filteredObras.filter(v => (v.clientName || '').toLowerCase().includes(client));
+    }
+
+    console.log('Obras filtradas:', filteredObras.length);
 
     filteredObras.sort((a, b) => new Date(b.date) - new Date(a.date));
 
@@ -1203,6 +1238,7 @@ function showPeriodReport() {
     document.getElementById('view-report-result').classList.add('flex');
     lucide.createIcons();
 }
+    
         // ======= IMPRESSÃO =======
         function printObra(id) {
             const obra = STATE.obras.find(o => String(o.id) === String(id));
